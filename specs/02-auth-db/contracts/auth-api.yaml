@@ -1,0 +1,219 @@
+openapi: 3.0.3
+info:
+  title: Authentication API
+  description: |
+    Backend API for authentication and user verification.
+
+    This API provides endpoints for verifying JWT tokens issued by Better Auth
+    on the frontend. The backend implements zero-trust architecture, verifying
+    every token signature and validating user existence in the database.
+
+    **Authentication Flow**:
+    1. User signs in via frontend (Better Auth)
+    2. Frontend issues JWT token stored in httpOnly cookie
+    3. Frontend makes API request with token in Authorization header
+    4. Backend verifies token signature using shared BETTER_AUTH_SECRET
+    5. Backend validates user exists in database
+    6. Backend returns user information or 401 Unauthorized
+
+  version: 1.0.0
+  contact:
+    name: Phase 2 Todo App
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+  - url: https://api.example.com
+    description: Production server (placeholder)
+
+tags:
+  - name: Authentication
+    description: User authentication and verification endpoints
+
+paths:
+  /api/v1/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current authenticated user
+      description: |
+        Returns information about the currently authenticated user.
+
+        This endpoint serves as a test endpoint to verify JWT token verification
+        is working correctly. It demonstrates the zero-trust architecture where
+        the backend verifies every token and validates user existence.
+
+        **Authentication Required**: Yes (JWT Bearer token)
+
+        **Use Cases**:
+        - Verify user is authenticated
+        - Get user profile information
+        - Test JWT token verification
+        - Validate session is still active
+
+      operationId: getCurrentUser
+      security:
+        - BearerAuth: []
+
+      responses:
+        '200':
+          description: Successfully authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+              examples:
+                success:
+                  summary: Successful authentication
+                  value:
+                    user_id: "550e8400-e29b-41d4-a716-446655440000"
+                    email: "user@example.com"
+                    name: "John Doe"
+                    status: "authenticated"
+
+        '401':
+          description: Unauthorized - Invalid, expired, or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missing_token:
+                  summary: Missing Authorization header
+                  value:
+                    detail: "Not authenticated"
+                invalid_token:
+                  summary: Invalid or expired token
+                  value:
+                    detail: "Could not validate credentials"
+                user_not_found:
+                  summary: User from token not found in database
+                  value:
+                    detail: "Could not validate credentials"
+
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                server_error:
+                  summary: Database connection error
+                  value:
+                    detail: "Internal server error"
+
+  /api/v1/health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      description: |
+        Returns the health status of the API.
+
+        **Authentication Required**: No
+
+      operationId: healthCheck
+
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2026-01-09T12:00:00Z"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token issued by Better Auth on the frontend.
+
+        **Format**: `Authorization: Bearer <token>`
+
+        **Token Structure**:
+        - Algorithm: HS256 (HMAC with SHA-256)
+        - Signature: Verified using BETTER_AUTH_SECRET
+        - Claims: Standard JWT claims (sub, exp, iat)
+
+        **Token Lifecycle**:
+        - Issued by Better Auth on successful sign-in
+        - Stored in httpOnly cookie on frontend
+        - Expires after 7 days
+        - Verified on every backend request
+
+  schemas:
+    UserResponse:
+      type: object
+      required:
+        - user_id
+        - email
+        - status
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          description: Unique user identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: "user@example.com"
+        name:
+          type: string
+          nullable: true
+          description: User's display name
+          example: "John Doe"
+        status:
+          type: string
+          enum:
+            - authenticated
+          description: Authentication status
+          example: "authenticated"
+      description: |
+        Authenticated user information returned by /api/v1/me endpoint.
+
+        **Data Source**: User table in Neon PostgreSQL database
+        **User ID Source**: Extracted from verified JWT token (sub claim)
+        **Validation**: User existence validated in database after token verification
+
+    ErrorResponse:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: string
+          description: Human-readable error message
+          example: "Could not validate credentials"
+      description: |
+        Standard error response format for all API errors.
+
+        **HTTP Status Codes**:
+        - 401: Authentication failure (invalid/missing token)
+        - 403: Authorization failure (valid token, insufficient permissions)
+        - 500: Internal server error
+
+        **Error Messages**:
+        - "Not authenticated": Missing Authorization header
+        - "Could not validate credentials": Invalid/expired token or user not found
+        - "Internal server error": Database or server error
+
+security:
+  - BearerAuth: []
+
+externalDocs:
+  description: Feature Specification
+  url: ../spec.md

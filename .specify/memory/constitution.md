@@ -1,55 +1,231 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# Phase 2 Todo App Constitution
+
+<!--
+Sync Impact Report:
+- Version: NEW → 1.0.0 (Initial constitution for Phase 2)
+- Ratification: 2026-01-08
+- Principles defined: 6 core principles
+- Sections added: Tech Stack, Security Requirements, Development Workflow, Governance
+- Templates requiring updates:
+  ✅ constitution.md (this file)
+  ⚠ plan-template.md (pending validation)
+  ⚠ spec-template.md (pending validation)
+  ⚠ tasks-template.md (pending validation)
+- Follow-up: Validate dependent templates align with new principles
+-->
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Spec-First Development (NON-NEGOTIABLE)
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+Every feature MUST be defined in `/specs/<feature>/` before any implementation begins.
+- All specifications must follow the Spec-Kit Plus template structure
+- Claude Code must reference specs using `@specs/` paths
+- No code may be written without a corresponding approved specification
+- Specifications are the single source of truth for requirements
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+**Rationale**: Prevents scope creep, ensures alignment, and maintains traceability between
+requirements and implementation in an agent-driven workflow.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### II. Security & Authentication (NON-NEGOTIABLE)
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+Every API request MUST require a valid JWT token verified by the backend.
+- JWT tokens are verified in FastAPI using a shared secret from environment variables
+- User identity MUST be derived from JWT claims, never from request body
+- API endpoints MUST enforce strict user data isolation (users can only access their own data)
+- Any request without a valid token returns 401 Unauthorized
+- No secrets or tokens may be hardcoded; all must use environment variables
 
-### [PRINCIPLE_6_NAME]
+**Rationale**: Ensures multi-user security, prevents unauthorized access, and protects user
+data privacy in a stateless authentication architecture.
 
+### III. Monorepo Architecture (NON-NEGOTIABLE)
 
-[PRINCIPLE__DESCRIPTION]
+The project follows a strict monorepo structure with clear separation of concerns.
+- `frontend/` contains Next.js 16+ application (App Router, TypeScript, Tailwind CSS)
+- `backend/` contains Python FastAPI application (SQLModel ORM, Neon PostgreSQL)
+- Frontend NEVER accesses database directly; all data access via backend REST APIs
+- Backend exposes RESTful APIs only; no direct frontend coupling
+- Shared types/contracts may exist but must be explicitly defined
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+**Rationale**: Enforces separation of concerns, enables independent scaling, and maintains
+clear boundaries between presentation and business logic layers.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### IV. Agent-Driven Development (NON-NEGOTIABLE)
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+All development must be performed by Claude Code following Spec-Kit Plus methodology.
+- No manu
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+**Rationale**: Ensures consistency, maintains spec-driven discipline, and leverages AI
+capabilities for systematic implementation following established patterns.
+
+### V. Tech Stack Compliance (NON-NEGOTIABLE)
+
+The technology stack is fixed and non-negotiable for Phase 2.
+- **Frontend**: Next.js 16+ (App Router), TypeScript, Tailwind CSS
+- **Backend**: Python FastAPI
+- **ORM**: SQLModel
+- **Database**: Neon Serverless PostgreSQL
+- **Authentication**: Better Auth (Frontend) + JWT verification (Backend)
+- No alternative technologies may be introduced without constitutional amendment
+
+**Rationale**: Prevents technology sprawl, ensures team expertise alignment, and maintains
+architectural consistency throughout Phase 2 development.
+
+### VI. API-First Backend Design
+
+Backend services must expose stateless RESTful APIs with clear contracts.
+- All task operations are scoped to the authenticated user
+- APIs must be idempotent where appropriate (PUT, DELETE)
+- Error responses must use standard HTTP status codes with descriptive messages
+- API versioning strategy: URL path versioning (`/api/v1/...`)
+- All endpoints must validate input and sanitize output
+
+**Rationale**: Enables frontend flexibility, supports future mobile clients, and ensures
+predictable, testable backend behavior with clear contracts.
+
+## Tech Stack Requirements
+
+### Fixed Technology Choices
+
+The following technologies are mandated for Phase 2 and cannot be substituted:
+
+**Frontend Stack**:
+- Framework: Next.js 16+ with App Router architecture
+- Language: TypeScript (strict mode enabled)
+- Styling: Tailwind CSS
+- Authentication: Better Auth library
+
+**Backend Stack**:
+- Framework: Python FastAPI
+- ORM: SQLModel
+- Database: Neon Serverless PostgreSQL
+- Authentication: JWT verification with shared secret
+
+**Development Tools**:
+- Spec System: GitHub Spec-Kit Plus
+- AI Agent: Claude Code (Sonnet 4.5+)
+- Version Control: Git with conventional commits
+
+### Environment Configuration
+
+All deployments must use environment variables for configuration:
+- Database connection strings
+- JWT signing secrets
+- API keys and service credentials
+- Feature flags (if applicable)
+
+No configuration may be hardcoded in source files.
+
+## Security Requirements
+
+### Authentication Flow
+
+1. **Frontend**: Better Auth handles user signup/signin, issues JWT tokens
+2. **Backend**: FastAPI middleware verifies JWT on every protected endpoint
+3. **User Context**: JWT claims provide user identity; never trust client-provided user IDs
+4. **Token Storage**: Frontend stores tokens securely (httpOnly cookies preferred)
+
+### Data Isolation
+
+- Every database query MUST filter by authenticated user ID
+- Users can only CREATE, READ, UPDATE, DELETE their own tasks
+- No cross-user data access is permitted under any circumstances
+- Admin/superuser roles are out of scope for Phase 2
+
+### Input Validation
+
+- All API inputs must be validated using Pydantic models
+- SQL injection prevention via SQLModel parameterized queries
+- XSS prevention via proper output encoding in frontend
+- CSRF protection via Better Auth built-in mechanisms
+
+## Development Workflow
+
+### Spec-Kit Plus Process
+
+1. **Specification Phase**: Define feature in `/specs/<feature>/spec.md`
+2. **Planning Phase**: Create architectural plan in `/specs/<feature>/plan.md`
+3. **Task Breakdown**: Generate tasks in `/specs/<feature>/tasks.md`
+4. **Implementation**: Agent executes tasks following TDD principles
+5. **Validation**: Verify against acceptance criteria in specification
+
+### Prompt History Records (PHR)
+
+After every significant interaction, a PHR must be created:
+- **Location**: `history/prompts/<category>/`
+- **Categories**: constitution, feature-specific, general
+- **Content**: Full user input (verbatim), agent response, context, outcomes
+- **Purpose**: Traceability, learning, debugging, audit trail
+
+### Architectural Decision Records (ADR)
+
+When architecturally significant decisions are made:
+- Agent MUST suggest creating an ADR with: "📋 Architectural decision detected: [brief] —
+  Document reasoning and tradeoffs? Run `/sp.adr <decision-title>`"
+- Wait for user consent; never auto-create ADRs
+- ADRs stored in `history/adr/`
+- Format: Context, Decision, Consequences, Alternatives Considered
+
+## Phase 2 Scope
+
+### In Scope
+
+- Task CRUD operations (Create, Read, Update, Delete, Toggle Complete)
+- User authentication (Signup, Signin, Session management)
+- Persistent storage with PostgreSQL via Neon
+- Responsive web UI with Tailwind CSS
+- Secure REST API with JWT authentication
+- User data isolation and security
+
+### Out of Scope
+
+The following are explicitly excluded from Phase 2:
+- AI assistants or chatbot features
+- Real-time collaboration (WebSockets, Server-Sent Events)
+- Background job processing
+- Email notifications
+- Task sharing between users
+- Mobile native applications
+- Any Phase 3 features not listed in Phase 2 scope
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+### Constitutional Authority
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+This constitution is the supreme governing document for Phase 2 development:
+- All specifications, plans, and implementations must comply with these principles
+- Any conflict between this constitution and other documents is resolved in favor of
+  the constitution
+- `CLAUDE.md` files must align with constitutional principles
+
+### Amendment Process
+
+Constitutional amendments require:
+1. Explicit user approval with clear rationale
+2. Version bump following semantic versioning:
+   - **MAJOR**: Backward-incompatible principle changes or removals
+   - **MINOR**: New principles added or material expansions
+   - **PATCH**: Clarifications, wording fixes, non-semantic refinements
+3. Update of dependent templates (spec, plan, tasks, commands)
+4. Creation of ADR documenting the amendment rationale
+5. Sync Impact Report documenting all affected artifacts
+
+### Compliance Verification
+
+- Every specification must include a "Constitution Compliance" section
+- Every plan must verify alignment with architectural principles
+- Every task must reference the principle(s) it implements
+- Agent must refuse requests that violate constitutional principles
+
+### Version History
+
+**Version**: 1.0.0 | **Ratified**: 2026-01-08 | **Last Amended**: 2026-01-08
+
+**Changelog**:
+- v1.0.0 (2026-01-08): Initial Phase 2 Constitution ratified
+  - Established 6 core principles
+  - Defined fixed tech stack
+  - Specified security requirements
+  - Documented development workflow
+  - Set Phase 2 scope boundaries
