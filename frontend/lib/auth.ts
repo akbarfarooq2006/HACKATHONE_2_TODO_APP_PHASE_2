@@ -10,11 +10,8 @@ const pool = new Pool({
 });
 
 export const auth = betterAuth({
-  // Database configuration
-  database: {
-    provider: "pg",
-    pool,
-  },
+  // Database configuration - use connection string directly
+  database: pool,
 
   // Email/password authentication provider
   emailAndPassword: {

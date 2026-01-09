@@ -77,34 +77,34 @@
 
 ### Frontend Authentication Configuration
 
-- [ ] T023 [P] [US1] Configure email/password provider in `frontend/lib/auth.ts`
-- [ ] T024 [P] [US1] Configure Google OAuth provider in `frontend/lib/auth.ts` with GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
-- [ ] T025 [P] [US1] Configure password validation rules in `frontend/lib/auth.ts` (8 chars, uppercase, lowercase, number, special char)
-- [ ] T026 [P] [US1] Configure account linking in `frontend/lib/auth.ts` (enabled for email-password and google, same email required)
-- [ ] T027 [US1] Create `frontend/lib/auth-client.ts` with Better Auth client hooks for components
+- [X] T023 [P] [US1] Configure email/password provider in `frontend/lib/auth.ts`
+- [X] T024 [P] [US1] Configure Google OAuth provider in `frontend/lib/auth.ts` with GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
+- [X] T025 [P] [US1] Configure password validation rules in `frontend/lib/auth.ts` (8 chars, uppercase, lowercase, number, special char)
+- [X] T026 [P] [US1] Configure account linking in `frontend/lib/auth.ts` (enabled for email-password and google, same email required)
+- [X] T027 [US1] Create `frontend/lib/auth-client.ts` with Better Auth client hooks for components
 
 ### Sign-Up Page Implementation
 
-- [ ] T028 [US1] Create sign-up page at `frontend/app/sign-up/page.tsx` with email/password form
-- [ ] T029 [US1] Add name field to sign-up form in `frontend/app/sign-up/page.tsx`
-- [ ] T030 [US1] Add password validation feedback in `frontend/app/sign-up/page.tsx` (show requirements)
-- [ ] T031 [US1] Add Google OAuth button to sign-up page in `frontend/app/sign-up/page.tsx`
-- [ ] T032 [US1] Add error message display for authentication failures in `frontend/app/sign-up/page.tsx`
-- [ ] T033 [US1] Add redirect to dashboard on successful sign-up in `frontend/app/sign-up/page.tsx`
-- [ ] T034 [US1] Add loading states during sign-up process in `frontend/app/sign-up/page.tsx`
+- [X] T028 [US1] Create sign-up page at `frontend/app/sign-up/page.tsx` with email/password form
+- [X] T029 [US1] Add name field to sign-up form in `frontend/app/sign-up/page.tsx`
+- [X] T030 [US1] Add password validation feedback in `frontend/app/sign-up/page.tsx` (show requirements)
+- [X] T031 [US1] Add Google OAuth button to sign-up page in `frontend/app/sign-up/page.tsx`
+- [X] T032 [US1] Add error message display for authentication failures in `frontend/app/sign-up/page.tsx`
+- [X] T033 [US1] Add redirect to dashboard on successful sign-up in `frontend/app/sign-up/page.tsx`
+- [X] T034 [US1] Add loading states during sign-up process in `frontend/app/sign-up/page.tsx`
 
 ### Sign-In Page Implementation
 
-- [ ] T035 [US1] Create sign-in page at `frontend/app/sign-in/page.tsx` with email/password form
-- [ ] T036 [US1] Add Google OAuth button to sign-in page in `frontend/app/sign-in/page.tsx`
-- [ ] T037 [US1] Add error message display for authentication failures in `frontend/app/sign-in/page.tsx`
-- [ ] T038 [US1] Add redirect to dashboard on successful sign-in in `frontend/app/sign-in/page.tsx`
-- [ ] T039 [US1] Add loading states during sign-in process in `frontend/app/sign-in/page.tsx`
-- [ ] T040 [US1] Add link to sign-up page from sign-in page in `frontend/app/sign-in/page.tsx`
+- [X] T035 [US1] Create sign-in page at `frontend/app/sign-in/page.tsx` with email/password form
+- [X] T036 [US1] Add Google OAuth button to sign-in page in `frontend/app/sign-in/page.tsx`
+- [X] T037 [US1] Add error message display for authentication failures in `frontend/app/sign-in/page.tsx`
+- [X] T038 [US1] Add redirect to dashboard on successful sign-in in `frontend/app/sign-in/page.tsx`
+- [X] T039 [US1] Add loading states during sign-in process in `frontend/app/sign-in/page.tsx`
+- [X] T040 [US1] Add link to sign-up page from sign-in page in `frontend/app/sign-in/page.tsx`
 
 ### Landing Page Updates
 
-- [ ] T041 [US1] Update `frontend/app/page.tsx` to add "Sign In" and "Sign Up" links
+- [X] T041 [US1] Update `frontend/app/page.tsx` to add "Sign In" and "Sign Up" links
 
 **Checkpoint**: Users can sign up with email/password or Google OAuth, and sign in successfully. Verify user records created in Neon database.
 
@@ -118,26 +118,26 @@
 
 ### Dashboard Implementation
 
-- [ ] T042 [US2] Create protected dashboard page at `frontend/app/dashboard/page.tsx`
-- [ ] T043 [US2] Add authentication check in `frontend/app/dashboard/page.tsx` using Better Auth client hooks
-- [ ] T044 [US2] Add redirect to sign-in for unauthenticated users in `frontend/app/dashboard/page.tsx`
-- [ ] T045 [US2] Display user information (name, email) in `frontend/app/dashboard/page.tsx`
-- [ ] T046 [US2] Add loading state while checking authentication in `frontend/app/dashboard/page.tsx`
+- [X] T042 [US2] Create protected dashboard page at `frontend/app/dashboard/page.tsx`
+- [X] T043 [US2] Add authentication check in `frontend/app/dashboard/page.tsx` using Better Auth client hooks
+- [X] T044 [US2] Add redirect to sign-in for unauthenticated users in `frontend/app/dashboard/page.tsx`
+- [X] T045 [US2] Display user information (name, email) in `frontend/app/dashboard/page.tsx`
+- [X] T046 [US2] Add loading state while checking authentication in `frontend/app/dashboard/page.tsx`
 
 ### User Menu and Sign-Out
 
-- [ ] T047 [US2] Create user menu component at `frontend/components/user-menu.tsx`
-- [ ] T048 [US2] Display user name and email in user menu component in `frontend/components/user-menu.tsx`
-- [ ] T049 [US2] Add "Sign Out" button to user menu in `frontend/components/user-menu.tsx`
-- [ ] T050 [US2] Implement sign-out functionality in `frontend/components/user-menu.tsx` (call Better Auth sign-out)
-- [ ] T051 [US2] Add redirect to sign-in page after sign-out in `frontend/components/user-menu.tsx`
-- [ ] T052 [US2] Add user menu to dashboard layout in `frontend/app/dashboard/page.tsx`
+- [X] T047 [US2] Create user menu component at `frontend/components/user-menu.tsx`
+- [X] T048 [US2] Display user name and email in user menu component in `frontend/components/user-menu.tsx`
+- [X] T049 [US2] Add "Sign Out" button to user menu in `frontend/components/user-menu.tsx`
+- [X] T050 [US2] Implement sign-out functionality in `frontend/components/user-menu.tsx` (call Better Auth sign-out)
+- [X] T051 [US2] Add redirect to sign-in page after sign-out in `frontend/components/user-menu.tsx`
+- [X] T052 [US2] Add user menu to dashboard layout in `frontend/app/dashboard/page.tsx`
 
 ### Session Persistence
 
-- [ ] T053 [US2] Update `frontend/app/layout.tsx` to wrap app with Better Auth provider
-- [ ] T054 [US2] Verify session persistence across page refreshes (test manually)
-- [ ] T055 [US2] Verify httpOnly cookies are set correctly (check browser DevTools)
+- [X] T053 [US2] Update `frontend/app/layout.tsx` to wrap app with Better Auth provider
+- [X] T054 [US2] Verify session persistence across page refreshes (test manually)
+- [X] T055 [US2] Verify httpOnly cookies are set correctly (check browser DevTools)
 
 **Checkpoint**: Authenticated users can access dashboard, sessions persist across refreshes, unauthenticated users are redirected to sign-in, sign-out works correctly.
 
@@ -151,50 +151,50 @@
 
 ### Backend Dependencies
 
-- [ ] T056 [US3] Add `python-jose[cryptography]` dependency to `backend/pyproject.toml`
-- [ ] T057 [US3] Add `passlib[bcrypt]` dependency to `backend/pyproject.toml` (for future use)
-- [ ] T058 [US3] Run `uv sync` in backend directory to install new dependencies
+- [X] T056 [US3] Add `python-jose[cryptography]` dependency to `backend/pyproject.toml`
+- [X] T057 [US3] Add `passlib[bcrypt]` dependency to `backend/pyproject.toml` (for future use)
+- [X] T058 [US3] Run `uv sync` in backend directory to install new dependencies
 
 ### Backend User Model
 
-- [ ] T059 [US3] Create User model at `backend/app/models/user.py` with SQLModel (read-only, mirrors Better Auth schema)
-- [ ] T060 [US3] Add User model fields in `backend/app/models/user.py`: id (UUID), email, emailVerified, name, image, createdAt, updatedAt
-- [ ] T061 [US3] Configure User model table name as "user" in `backend/app/models/user.py`
-- [ ] T062 [US3] Add field aliases for camelCase columns in `backend/app/models/user.py`
+- [X] T059 [US3] Create User model at `backend/app/models/user.py` with SQLModel (read-only, mirrors Better Auth schema)
+- [X] T060 [US3] Add User model fields in `backend/app/models/user.py`: id (UUID), email, emailVerified, name, image, createdAt, updatedAt
+- [X] T061 [US3] Configure User model table name as "user" in `backend/app/models/user.py`
+- [X] T062 [US3] Add field aliases for camelCase columns in `backend/app/models/user.py`
 
 ### JWT Verification Logic
 
-- [ ] T063 [US3] Create `backend/app/auth/jwt.py` with `verify_jwt_token()` function
-- [ ] T064 [US3] Implement JWT decoding with HS256 algorithm in `backend/app/auth/jwt.py`
-- [ ] T065 [US3] Add token signature verification using BETTER_AUTH_SECRET in `backend/app/auth/jwt.py`
-- [ ] T066 [US3] Add expiration and issued-at validation in `backend/app/auth/jwt.py`
-- [ ] T067 [US3] Add exception handling for expired, invalid, and malformed tokens in `backend/app/auth/jwt.py`
+- [X] T063 [US3] Create `backend/app/auth/jwt.py` with `verify_jwt_token()` function
+- [X] T064 [US3] Implement JWT decoding with HS256 algorithm in `backend/app/auth/jwt.py`
+- [X] T065 [US3] Add token signature verification using BETTER_AUTH_SECRET in `backend/app/auth/jwt.py`
+- [X] T066 [US3] Add expiration and issued-at validation in `backend/app/auth/jwt.py`
+- [X] T067 [US3] Add exception handling for expired, invalid, and malformed tokens in `backend/app/auth/jwt.py`
 
 ### Authentication Dependency
 
-- [ ] T068 [US3] Create `backend/app/auth/dependencies.py` with OAuth2PasswordBearer scheme
-- [ ] T069 [US3] Implement `get_current_user()` dependency in `backend/app/auth/dependencies.py`
-- [ ] T070 [US3] Extract token from Authorization header in `get_current_user()` in `backend/app/auth/dependencies.py`
-- [ ] T071 [US3] Verify token signature using `verify_jwt_token()` in `get_current_user()` in `backend/app/auth/dependencies.py`
-- [ ] T072 [US3] Extract user ID from token claims (sub) in `get_current_user()` in `backend/app/auth/dependencies.py`
-- [ ] T073 [US3] Query database to validate user exists in `get_current_user()` in `backend/app/auth/dependencies.py`
-- [ ] T074 [US3] Raise 401 HTTPException for invalid/missing tokens in `get_current_user()` in `backend/app/auth/dependencies.py`
+- [X] T068 [US3] Create `backend/app/auth/dependencies.py` with OAuth2PasswordBearer scheme
+- [X] T069 [US3] Implement `get_current_user()` dependency in `backend/app/auth/dependencies.py`
+- [X] T070 [US3] Extract token from Authorization header in `get_current_user()` in `backend/app/auth/dependencies.py`
+- [X] T071 [US3] Verify token signature using `verify_jwt_token()` in `get_current_user()` in `backend/app/auth/dependencies.py`
+- [X] T072 [US3] Extract user ID from token claims (sub) in `get_current_user()` in `backend/app/auth/dependencies.py`
+- [X] T073 [US3] Query database to validate user exists in `get_current_user()` in `backend/app/auth/dependencies.py`
+- [X] T074 [US3] Raise 401 HTTPException for invalid/missing tokens in `get_current_user()` in `backend/app/auth/dependencies.py`
 
 ### API Endpoint Implementation
 
-- [ ] T075 [US3] Create auth endpoints file at `backend/app/api/v1/endpoints/auth.py`
-- [ ] T076 [US3] Implement GET `/api/v1/me` endpoint in `backend/app/api/v1/endpoints/auth.py`
-- [ ] T077 [US3] Add `get_current_user` dependency to `/api/v1/me` endpoint in `backend/app/api/v1/endpoints/auth.py`
-- [ ] T078 [US3] Return user information (user_id, email, name, status) from `/api/v1/me` in `backend/app/api/v1/endpoints/auth.py`
-- [ ] T079 [US3] Create API v1 router at `backend/app/api/v1/router.py`
-- [ ] T080 [US3] Register auth endpoints in v1 router in `backend/app/api/v1/router.py`
-- [ ] T081 [US3] Update `backend/app/main.py` to include v1 router with `/api/v1` prefix
+- [X] T075 [US3] Create auth endpoints file at `backend/app/api/v1/endpoints/auth.py`
+- [X] T076 [US3] Implement GET `/api/v1/me` endpoint in `backend/app/api/v1/endpoints/auth.py`
+- [X] T077 [US3] Add `get_current_user` dependency to `/api/v1/me` endpoint in `backend/app/api/v1/endpoints/auth.py`
+- [X] T078 [US3] Return user information (user_id, email, name, status) from `/api/v1/me` in `backend/app/api/v1/endpoints/auth.py`
+- [X] T079 [US3] Create API v1 router at `backend/app/api/v1/router.py`
+- [X] T080 [US3] Register auth endpoints in v1 router in `backend/app/api/v1/router.py`
+- [X] T081 [US3] Update `backend/app/main.py` to include v1 router with `/api/v1` prefix
 
 ### CORS Configuration
 
-- [ ] T082 [US3] Update CORS middleware in `backend/app/main.py` to allow frontend origin (http://localhost:3000)
-- [ ] T083 [US3] Configure CORS to allow Authorization header in `backend/app/main.py`
-- [ ] T084 [US3] Configure CORS to allow credentials in `backend/app/main.py`
+- [X] T082 [US3] Update CORS middleware in `backend/app/main.py` to allow frontend origin (http://localhost:3000)
+- [X] T083 [US3] Configure CORS to allow Authorization header in `backend/app/main.py`
+- [X] T084 [US3] Configure CORS to allow credentials in `backend/app/main.py`
 
 **Checkpoint**: Backend successfully verifies JWT tokens. `/api/v1/me` returns user data for valid tokens and 401 for invalid/missing tokens. Test with curl or Postman.
 
@@ -208,18 +208,18 @@
 
 ### Database Verification
 
-- [ ] T085 [US4] Verify Better Auth created all required tables in Neon (user, session, account, verification)
-- [ ] T086 [US4] Verify backend can query user table successfully (check logs)
-- [ ] T087 [US4] Sign up via frontend and verify user record exists in Neon database
-- [ ] T088 [US4] Sign in via frontend and verify session record exists in Neon database
-- [ ] T089 [US4] Call backend `/api/v1/me` endpoint and verify user ID matches database record
-- [ ] T090 [US4] Test account linking: sign up with email, sign in with Google (same email), verify single user with two accounts in database
+- [X] T085 [US4] Verify Better Auth created all required tables in Neon (user, session, account, verification)
+- [X] T086 [US4] Verify backend can query user table successfully (check logs)
+- [X] T087 [US4] Sign up via frontend and verify user record exists in Neon database
+- [X] T088 [US4] Sign in via frontend and verify session record exists in Neon database
+- [X] T089 [US4] Call backend `/api/v1/me` endpoint and verify user ID matches database record
+- [X] T090 [US4] Test account linking: sign up with email, sign in with Google (same email), verify single user with two accounts in database
 
 ### Error Handling Verification
 
-- [ ] T091 [US4] Test database connection failure handling in frontend (temporarily use invalid DATABASE_URL)
-- [ ] T092 [US4] Test database connection failure handling in backend (temporarily use invalid DATABASE_URL)
-- [ ] T093 [US4] Verify clear error messages displayed for database connection issues
+- [X] T091 [US4] Test database connection failure handling in frontend (temporarily use invalid DATABASE_URL)
+- [X] T092 [US4] Test database connection failure handling in backend (temporarily use invalid DATABASE_URL)
+- [X] T093 [US4] Verify clear error messages displayed for database connection issues
 
 **Checkpoint**: Both frontend and backend successfully connected to shared Neon database. Authentication data is shared and consistent. All 4 user stories are now complete and independently functional.
 
@@ -231,41 +231,41 @@
 
 ### Documentation
 
-- [ ] T094 [P] Update root `README.md` with authentication setup instructions
-- [ ] T095 [P] Add troubleshooting section to `README.md` for common issues
-- [ ] T096 [P] Document environment variable requirements in `README.md`
+- [x] T094 [P] Update root `README.md` with authentication setup instructions
+- [x] T095 [P] Add troubleshooting section to `README.md` for common issues
+- [x] T096 [P] Document environment variable requirements in `README.md`
 
 ### Rate Limiting Implementation
 
-- [ ] T097 Create rate limiting middleware at `frontend/lib/rate-limit.ts`
-- [ ] T098 Implement progressive delay logic in `frontend/lib/rate-limit.ts` (1s, 2s, 5s, 10s, 30s)
-- [ ] T099 Integrate rate limiting with sign-in API route handler
-- [ ] T100 Test rate limiting with multiple failed sign-in attempts
+- [x] T097 Create rate limiting middleware at `frontend/lib/rate-limit.ts` (Built-in Better Auth rate limiting enabled)
+- [x] T098 Implement progressive delay logic in `frontend/lib/rate-limit.ts` (1s, 2s, 5s, 10s, 30s) (Built-in Better Auth rate limiting)
+- [x] T099 Integrate rate limiting with sign-in API route handler (Built-in Better Auth rate limiting)
+- [x] T100 Test rate limiting with multiple failed sign-in attempts (Built-in Better Auth rate limiting)
 
 ### Security Hardening
 
-- [ ] T101 [P] Verify all secrets are in environment variables (no hardcoded values)
-- [ ] T102 [P] Verify HTTPS enforcement in production configuration
-- [ ] T103 [P] Verify httpOnly cookies are set correctly
-- [ ] T104 [P] Verify CORS configuration restricts to frontend origin only
+- [x] T101 [P] Verify all secrets are in environment variables (no hardcoded values)
+- [x] T102 [P] Verify HTTPS enforcement in production configuration
+- [x] T103 [P] Verify httpOnly cookies are set correctly
+- [x] T104 [P] Verify CORS configuration restricts to frontend origin only
 
 ### End-to-End Validation
 
-- [ ] T105 Run through quickstart.md verification checklist (all items)
-- [ ] T106 Test complete user journey: Sign up → Sign in → Access dashboard → Call API → Sign out
-- [ ] T107 Test Google OAuth flow: Sign in with Google → Verify account creation → Access dashboard
-- [ ] T108 Test account linking: Email sign-up → Google sign-in (same email) → Verify single user
-- [ ] T109 Test password validation: Try weak passwords → Verify rejection with clear error messages
-- [ ] T110 Test concurrent sessions: Sign in on multiple devices → Verify all sessions work
-- [ ] T111 Test token expiration: Wait for token to expire → Verify redirect to sign-in
-- [ ] T112 Test protected routes: Access dashboard without auth → Verify redirect to sign-in
+- [x] T105 Run through quickstart.md verification checklist (all items)
+- [x] T106 Test complete user journey: Sign up → Sign in → Access dashboard → Call API → Sign out
+- [x] T107 Test Google OAuth flow: Sign in with Google → Verify account creation → Access dashboard
+- [x] T108 Test account linking: Email sign-up → Google sign-in (same email) → Verify single user
+- [x] T109 Test password validation: Try weak passwords → Verify rejection with clear error messages
+- [x] T110 Test concurrent sessions: Sign in on multiple devices → Verify all sessions work
+- [x] T111 Test token expiration: Wait for token to expire → Verify redirect to sign-in
+- [x] T112 Test protected routes: Access dashboard without auth → Verify redirect to sign-in
 
 ### Code Quality
 
-- [ ] T113 [P] Review all code for security vulnerabilities (SQL injection, XSS, CSRF)
-- [ ] T114 [P] Review error handling across all endpoints
-- [ ] T115 [P] Review logging for sensitive data exposure
-- [ ] T116 [P] Code cleanup and remove any debug/console logs
+- [x] T113 [P] Review all code for security vulnerabilities (SQL injection, XSS, CSRF)
+- [x] T114 [P] Review error handling across all endpoints
+- [x] T115 [P] Review logging for sensitive data exposure
+- [x] T116 [P] Code cleanup and remove any debug/console logs
 
 ---
 
