@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { jwt } from "better-auth/plugins";
 import { Pool } from "pg";
 
 // Create PostgreSQL connection pool for Better Auth
@@ -44,13 +45,15 @@ export const auth = betterAuth({
     },
   },
 
-  // Session configuration
+  // Session configuration - JWT tokens stored in httpOnly cookies (FR-007, FR-008)
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days in seconds (FR-007)
     updateAge: 60 * 60 * 24, // Update session every 24 hours
     cookieCache: {
       enabled: true,
-      maxAge: 60 * 5, // 5 minutes
+      maxAge: 60 * 60 * 24 * 7, // 7 days - match session expiration
+      strategy: "jwt", // Store JWT tokens in cookies (not session tokens)
+      refreshCache: true, // Enable stateless refresh
     },
   },
 
@@ -73,15 +76,23 @@ export const auth = betterAuth({
     crossSubDomainCookies: {
       enabled: false,
     },
-    generateSessionToken: () => {
-      // Use default secure token generation
-      return undefined;
-    },
   },
 
   // Trust proxy for production deployments
   trustedOrigins: [
     process.env.BETTER_AUTH_URL || "http://localhost:3000",
     "http://localhost:3000",
+  ],
+
+  // JWT Plugin for stateless token generation
+  plugins: [
+    jwt({
+      jwt: {
+        algorithm: "HS256", // Use HS256 to match backend verification (FR-008)
+        issuer: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+        audience: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+        expirationTime: "7d", // 7 days
+      }
+    }),
   ],
 });

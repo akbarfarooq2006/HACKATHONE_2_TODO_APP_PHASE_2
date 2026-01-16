@@ -292,7 +292,7 @@ WHERE email = 'test@example.com';
 4. **Submit form**
 5. **Expected result**: Redirected to dashboard
 
-### 4.4 Extract JWT Token
+### 4.4 Extract JWT Token and User ID
 
 **Chrome DevTools**:
 1. Open DevTools (F12)
@@ -301,19 +301,27 @@ WHERE email = 'test@example.com';
 4. Find cookie named `better-auth.session_token` or similar
 5. Copy the value (JWT token)
 
+**Decode JWT to Get User ID**:
+1. Go to [jwt.io](https://jwt.io)
+2. Paste your JWT token
+3. Look at the decoded payload for the `sub` claim
+4. Copy the `sub` value (this is your user_id)
+
 **Alternative - Network Tab**:
 1. Open DevTools (F12)
 2. Go to "Network" tab
 3. Sign in again
 4. Find request to `/api/auth/sign-in`
 5. Check "Response Headers" for `Set-Cookie`
-6. Copy JWT token value
+6. Copy JWT token value and decode to get user_id
 
-### 4.5 Test Backend Token Verification
+### 4.5 Test Backend Token Verification (Stateless)
 
-**Using curl**:
+**Using curl with correct user_id in path**:
 ```bash
-curl -X GET http://localhost:8000/api/v1/me \
+# Replace YOUR_USER_ID with the sub claim from your JWT token
+# Replace YOUR_JWT_TOKEN with your actual token
+curl -X GET http://localhost:8000/api/v1/users/YOUR_USER_ID/me \
   -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
 ```
 
@@ -323,13 +331,14 @@ curl -X GET http://localhost:8000/api/v1/me \
   "user_id": "550e8400-e29b-41d4-a716-446655440000",
   "email": "test@example.com",
   "name": "Test User",
-  "status": "authenticated"
+  "status": "authenticated",
+  "message": "Token verified statelessly - no database lookup performed"
 }
 ```
 
 **Test invalid token**:
 ```bash
-curl -X GET http://localhost:8000/api/v1/me \
+curl -X GET http://localhost:8000/api/v1/users/YOUR_USER_ID/me \
   -H "Authorization: Bearer invalid_token"
 ```
 
@@ -342,13 +351,27 @@ curl -X GET http://localhost:8000/api/v1/me \
 
 **Test missing token**:
 ```bash
-curl -X GET http://localhost:8000/api/v1/me
+curl -X GET http://localhost:8000/api/v1/users/YOUR_USER_ID/me
 ```
 
 **Expected response (401 Unauthorized)**:
 ```json
 {
   "detail": "Not authenticated"
+}
+```
+
+**Test path-based security (wrong user_id in path)**:
+```bash
+# Use a different user_id in the path than what's in your token
+curl -X GET http://localhost:8000/api/v1/users/00000000-0000-0000-0000-000000000000/me \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+```
+
+**Expected response (403 Forbidden)**:
+```json
+{
+  "detail": "User ID in path does not match token user ID"
 }
 ```
 
@@ -403,10 +426,11 @@ Use this checklist to confirm everything is working:
 ### Backend
 - [ ] Backend server running on `http://localhost:8000`
 - [ ] Health endpoint returns 200 OK at `/api/v1/health`
-- [ ] `/api/v1/me` returns user data with valid token
-- [ ] `/api/v1/me` returns 401 with invalid token
-- [ ] `/api/v1/me` returns 401 with missing token
-- [ ] Backend logs show successful database connection
+- [ ] `/api/v1/users/{user_id}/me` returns user data with valid token and matching path
+- [ ] `/api/v1/users/{user_id}/me` returns 401 with invalid token
+- [ ] `/api/v1/users/{user_id}/me` returns 401 with missing token
+- [ ] `/api/v1/users/{user_id}/me` returns 403 with mismatched user_id in path
+- [ ] Token verification is stateless (no database queries)
 
 ### Database
 - [ ] Four tables exist: user, session, account, verification
@@ -417,9 +441,9 @@ Use this checklist to confirm everything is working:
 
 ### Integration
 - [ ] Frontend issues JWT tokens on sign-in
-- [ ] Backend verifies JWT tokens successfully
-- [ ] User ID from token matches database record
-- [ ] End-to-end flow works: Sign up → Sign in → API call → Success
+- [ ] Backend verifies JWT tokens statelessly (no database lookups)
+- [ ] Path-based security enforced (user_id in path must match token)
+- [ ] End-to-end flow works: Sign up → Sign in → API call with correct user_id → Success
 
 ---
 
@@ -436,13 +460,27 @@ Use this checklist to confirm everything is working:
 
 ### Issue: "Could not validate credentials" on backend
 
-**Cause**: Token secret mismatch between frontend and backend
+**Cause**: Token secret mismatch between frontend and backend, or invalid token
 
 **Solution**:
 1. Verify `BETTER_AUTH_SECRET` is **identical** in both .env files
 2. Check for extra spaces or quotes in secret value
 3. Regenerate secret with `openssl rand -base64 32` and update both files
 4. Restart both servers
+5. Ensure token is not expired (7-day expiration)
+
+### Issue: "User ID in path does not match token user ID" (403 Forbidden)
+
+**Cause**: Path-based security violation - user_id in URL path doesn't match token sub claim
+
+**Solution**:
+1. Decode your JWT token at [jwt.io](https://jwt.io) to see the `sub` claim
+2. Use the exact user_id from the `sub` claim in the URL path
+3. Example: If `sub` is `550e8400-e29b-41d4-a716-446655440000`, use:
+   ```bash
+   curl -X GET http://localhost:8000/api/v1/users/550e8400-e29b-41d4-a716-446655440000/me \
+     -H "Authorization: Bearer YOUR_TOKEN"
+   ```
 
 ### Issue: "Connection refused" to database
 

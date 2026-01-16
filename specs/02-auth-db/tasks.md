@@ -5,9 +5,9 @@
 
 **Tests**: Tests are NOT explicitly requested in the specification, so test tasks are excluded. Manual verification steps are provided in quickstart.md.
 
-**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story. The implementation follows a layered approach: Database & Environment → Frontend Authentication → Backend Token Verification.
+**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story. The implementation follows a layered approach from plan.md: Database & Environment → Frontend Authentication → Backend Token Verification.
 
-## Format: `[ID] [P?] [Story] Description`
+## Format: `- [ ] [ID] [P?] [Story?] Description`
 
 - **[P]**: Can run in parallel (different files, no dependencies)
 - **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3, US4)
@@ -23,12 +23,12 @@
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-**Purpose**: Project initialization and environment configuration
+**Purpose**: Project initialization and environment verification
 
-- [X] T001 Verify Node.js v18+ and npm v8+ installed for frontend
-- [X] T002 Verify Python 3.11+ and uv installed for backend
-- [X] T003 Verify Neon PostgreSQL database is provisioned and accessible
-- [X] T004 Verify Google OAuth credentials are obtained from Google Cloud Console
+- [x] T001 Verify Node.js v18+ and npm v8+ installed for frontend
+- [x] T002 Verify Python 3.11+ and uv installed for backend
+- [x] T003 Verify Neon PostgreSQL database is provisioned and accessible
+- [x] T004 Verify Google OAuth credentials are obtained from Google Cloud Console
 
 ---
 
@@ -38,34 +38,34 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-### Environment Configuration
+### Environment Configuration (ENV-001 to ENV-005)
 
-- [X] T005 Generate BETTER_AUTH_SECRET using `openssl rand -base64 32`
-- [X] T006 [P] Create `frontend/.env.local` with DATABASE_URL, BETTER_AUTH_SECRET, BETTER_AUTH_URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
-- [X] T007 [P] Create `backend/.env` with DATABASE_URL and BETTER_AUTH_SECRET (must match frontend)
-- [X] T008 [P] Update `frontend/.env.example` with placeholder values for all required variables
-- [X] T009 [P] Update `backend/.env.example` with placeholder values for DATABASE_URL and BETTER_AUTH_SECRET
-- [X] T010 Update root `.gitignore` to exclude `.env`, `.env.local`, `frontend/.env.local`, `backend/.env`
+- [x] T005 Generate BETTER_AUTH_SECRET using `openssl rand -base64 32`
+- [x] T006 [P] Create `frontend/.env.local` with DATABASE_URL, BETTER_AUTH_SECRET, BETTER_AUTH_URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+- [x] T007 [P] Create `backend/.env` with DATABASE_URL and BETTER_AUTH_SECRET (must match frontend)
+- [x] T008 [P] Update `frontend/.env.example` with placeholder values for all required variables
+- [x] T009 [P] Update `backend/.env.example` with placeholder values for DATABASE_URL and BETTER_AUTH_SECRET
+- [x] T010 Update root `.gitignore` to exclude `.env`, `.env.local`, `frontend/.env.local`, `backend/.env`
 
-### Frontend Database Connection
+### Frontend Database Connection (DB-001 to DB-003)
 
-- [X] T011 Install Better Auth and pg dependencies in frontend: `npm install better-auth pg`
-- [X] T012 Create `frontend/lib/auth.ts` with Better Auth configuration (database Pool, session settings)
-- [X] T013 Configure Better Auth database adapter with Neon PostgreSQL connection in `frontend/lib/auth.ts`
-- [X] T014 Configure session expiration (7 days) in `frontend/lib/auth.ts`
-- [X] T015 Add nextCookies plugin to Better Auth configuration in `frontend/lib/auth.ts`
-- [X] T016 Create Better Auth API route handler at `frontend/app/api/auth/[...all]/route.ts`
-- [X] T017 Start frontend dev server and verify Better Auth creates tables (user, session, account, verification) in Neon
+- [x] T011 Install Better Auth and pg dependencies in frontend: `npm install better-auth pg`
+- [x] T012 Create `frontend/lib/auth.ts` with Better Auth configuration (database Pool, session with `strategy: "jwt"` for stateless verification)
+- [x] T013 Configure Better Auth database adapter with Neon PostgreSQL connection in `frontend/lib/auth.ts`
+- [x] T014 Configure session expiration (7 days) in `frontend/lib/auth.ts`
+- [x] T015 Add nextCookies plugin to Better Auth configuration in `frontend/lib/auth.ts`
+- [x] T016 Create Better Auth API route handler at `frontend/app/api/auth/[...all]/route.ts`
+- [x] T017 Start frontend dev server and verify Better Auth creates tables (user, session, account, verification) in Neon
 
-### Backend Database Connection
+### Backend Configuration (DB-004)
 
-- [X] T018 Create `backend/app/config.py` with Settings class using pydantic-settings for environment variables
-- [X] T019 Add environment variable validation in `backend/app/config.py` (DATABASE_URL format, BETTER_AUTH_SECRET length)
-- [X] T020 Create `backend/app/database.py` with SQLModel engine configuration (pool_size=5, max_overflow=10, pool_pre_ping=True)
-- [X] T021 Create `get_db()` dependency function in `backend/app/database.py` for database sessions
-- [X] T022 Start backend dev server and verify SQLModel connects to Neon successfully (check logs)
+- [x] T018 Create `backend/app/config.py` with Settings class using pydantic-settings for environment variables
+- [x] T019 Add environment variable validation in `backend/app/config.py` (DATABASE_URL format, BETTER_AUTH_SECRET length)
+- [x] T020 Create `backend/app/database.py` with SQLModel engine configuration (pool_size=5, max_overflow=10, pool_pre_ping=True)
+- [x] T021 Create `get_db()` dependency function in `backend/app/database.py` for future database sessions
+- [x] T022 Start backend dev server and verify it starts successfully (database connection for future use)
 
-**Checkpoint**: Foundation ready - Both frontend and backend connected to shared Neon database. User story implementation can now begin.
+**Checkpoint**: Foundation ready - Both frontend and backend configured. User story implementation can now begin.
 
 ---
 
@@ -75,36 +75,36 @@
 
 **Independent Test**: User can sign up with valid credentials, verify account creation in database, and successfully sign in with those credentials
 
-### Frontend Authentication Configuration
+### Frontend Authentication Configuration (FE-002)
 
-- [X] T023 [P] [US1] Configure email/password provider in `frontend/lib/auth.ts`
-- [X] T024 [P] [US1] Configure Google OAuth provider in `frontend/lib/auth.ts` with GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
-- [X] T025 [P] [US1] Configure password validation rules in `frontend/lib/auth.ts` (8 chars, uppercase, lowercase, number, special char)
-- [X] T026 [P] [US1] Configure account linking in `frontend/lib/auth.ts` (enabled for email-password and google, same email required)
-- [X] T027 [US1] Create `frontend/lib/auth-client.ts` with Better Auth client hooks for components
+- [x] T023 [P] [US1] Configure email/password provider in `frontend/lib/auth.ts`
+- [x] T024 [P] [US1] Configure Google OAuth provider in `frontend/lib/auth.ts` with GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
+- [x] T025 [P] [US1] Configure password validation rules in `frontend/lib/auth.ts` (8 chars, uppercase, lowercase, number, special char)
+- [x] T026 [P] [US1] Configure account linking in `frontend/lib/auth.ts` (enabled for email-password and google, same email required)
+- [x] T027 [US1] Create `frontend/lib/auth-client.ts` with Better Auth client hooks for components
 
-### Sign-Up Page Implementation
+### Sign-Up Page Implementation (FE-005)
 
-- [X] T028 [US1] Create sign-up page at `frontend/app/sign-up/page.tsx` with email/password form
-- [X] T029 [US1] Add name field to sign-up form in `frontend/app/sign-up/page.tsx`
-- [X] T030 [US1] Add password validation feedback in `frontend/app/sign-up/page.tsx` (show requirements)
-- [X] T031 [US1] Add Google OAuth button to sign-up page in `frontend/app/sign-up/page.tsx`
-- [X] T032 [US1] Add error message display for authentication failures in `frontend/app/sign-up/page.tsx`
-- [X] T033 [US1] Add redirect to dashboard on successful sign-up in `frontend/app/sign-up/page.tsx`
-- [X] T034 [US1] Add loading states during sign-up process in `frontend/app/sign-up/page.tsx`
+- [x] T028 [US1] Create sign-up page at `frontend/app/sign-up/page.tsx` with email/password form
+- [x] T029 [US1] Add name field to sign-up form in `frontend/app/sign-up/page.tsx`
+- [x] T030 [US1] Add password validation feedback in `frontend/app/sign-up/page.tsx` (show requirements)
+- [x] T031 [US1] Add Google OAuth button to sign-up page in `frontend/app/sign-up/page.tsx`
+- [x] T032 [US1] Add error message display for authentication failures in `frontend/app/sign-up/page.tsx`
+- [x] T033 [US1] Add redirect to dashboard on successful sign-up in `frontend/app/sign-up/page.tsx`
+- [x] T034 [US1] Add loading states during sign-up process in `frontend/app/sign-up/page.tsx`
 
-### Sign-In Page Implementation
+### Sign-In Page Implementation (FE-006)
 
-- [X] T035 [US1] Create sign-in page at `frontend/app/sign-in/page.tsx` with email/password form
-- [X] T036 [US1] Add Google OAuth button to sign-in page in `frontend/app/sign-in/page.tsx`
-- [X] T037 [US1] Add error message display for authentication failures in `frontend/app/sign-in/page.tsx`
-- [X] T038 [US1] Add redirect to dashboard on successful sign-in in `frontend/app/sign-in/page.tsx`
-- [X] T039 [US1] Add loading states during sign-in process in `frontend/app/sign-in/page.tsx`
-- [X] T040 [US1] Add link to sign-up page from sign-in page in `frontend/app/sign-in/page.tsx`
+- [x] T035 [US1] Create sign-in page at `frontend/app/sign-in/page.tsx` with email/password form
+- [x] T036 [US1] Add Google OAuth button to sign-in page in `frontend/app/sign-in/page.tsx`
+- [x] T037 [US1] Add error message display for authentication failures in `frontend/app/sign-in/page.tsx`
+- [x] T038 [US1] Add redirect to dashboard on successful sign-in in `frontend/app/sign-in/page.tsx`
+- [x] T039 [US1] Add loading states during sign-in process in `frontend/app/sign-in/page.tsx`
+- [x] T040 [US1] Add link to sign-up page from sign-in page in `frontend/app/sign-in/page.tsx`
 
-### Landing Page Updates
+### Landing Page Updates (FE-010)
 
-- [X] T041 [US1] Update `frontend/app/page.tsx` to add "Sign In" and "Sign Up" links
+- [x] T041 [US1] Update `frontend/app/page.tsx` to add "Sign In" and "Sign Up" links
 
 **Checkpoint**: Users can sign up with email/password or Google OAuth, and sign in successfully. Verify user records created in Neon database.
 
@@ -116,28 +116,28 @@
 
 **Independent Test**: Sign in, refresh page, verify user remains authenticated. Access protected routes without authentication and verify redirect to sign-in.
 
-### Dashboard Implementation
+### Dashboard Implementation (FE-007)
 
-- [X] T042 [US2] Create protected dashboard page at `frontend/app/dashboard/page.tsx`
-- [X] T043 [US2] Add authentication check in `frontend/app/dashboard/page.tsx` using Better Auth client hooks
-- [X] T044 [US2] Add redirect to sign-in for unauthenticated users in `frontend/app/dashboard/page.tsx`
-- [X] T045 [US2] Display user information (name, email) in `frontend/app/dashboard/page.tsx`
-- [X] T046 [US2] Add loading state while checking authentication in `frontend/app/dashboard/page.tsx`
+- [x] T042 [US2] Create protected dashboard page at `frontend/app/dashboard/page.tsx`
+- [x] T043 [US2] Add authentication check in `frontend/app/dashboard/page.tsx` using Better Auth client hooks
+- [x] T044 [US2] Add redirect to sign-in for unauthenticated users in `frontend/app/dashboard/page.tsx`
+- [x] T045 [US2] Display user information (name, email) in `frontend/app/dashboard/page.tsx`
+- [x] T046 [US2] Add loading state while checking authentication in `frontend/app/dashboard/page.tsx`
 
-### User Menu and Sign-Out
+### User Menu and Sign-Out (FE-008)
 
-- [X] T047 [US2] Create user menu component at `frontend/components/user-menu.tsx`
-- [X] T048 [US2] Display user name and email in user menu component in `frontend/components/user-menu.tsx`
-- [X] T049 [US2] Add "Sign Out" button to user menu in `frontend/components/user-menu.tsx`
-- [X] T050 [US2] Implement sign-out functionality in `frontend/components/user-menu.tsx` (call Better Auth sign-out)
-- [X] T051 [US2] Add redirect to sign-in page after sign-out in `frontend/components/user-menu.tsx`
-- [X] T052 [US2] Add user menu to dashboard layout in `frontend/app/dashboard/page.tsx`
+- [x] T047 [US2] Create user menu component at `frontend/components/user-menu.tsx`
+- [x] T048 [US2] Display user name and email in user menu component in `frontend/components/user-menu.tsx`
+- [x] T049 [US2] Add "Sign Out" button to user menu in `frontend/components/user-menu.tsx`
+- [x] T050 [US2] Implement sign-out functionality in `frontend/components/user-menu.tsx` (call Better Auth sign-out)
+- [x] T051 [US2] Add redirect to sign-in page after sign-out in `frontend/components/user-menu.tsx`
+- [x] T052 [US2] Add user menu to dashboard layout in `frontend/app/dashboard/page.tsx`
 
-### Session Persistence
+### Session Persistence (FE-009)
 
-- [X] T053 [US2] Update `frontend/app/layout.tsx` to wrap app with Better Auth provider
-- [X] T054 [US2] Verify session persistence across page refreshes (test manually)
-- [X] T055 [US2] Verify httpOnly cookies are set correctly (check browser DevTools)
+- [x] T053 [US2] Update `frontend/app/layout.tsx` to wrap app with Better Auth provider
+- [x] T054 [US2] Verify session persistence across page refreshes (test manually)
+- [x] T055 [US2] Verify httpOnly cookies are set correctly (check browser DevTools)
 
 **Checkpoint**: Authenticated users can access dashboard, sessions persist across refreshes, unauthenticated users are redirected to sign-in, sign-out works correctly.
 
@@ -145,83 +145,85 @@
 
 ## Phase 5: User Story 3 - Backend Token Verification (Priority: P1)
 
-**Goal**: Enable backend to verify JWT tokens on every protected API request and return user information
+**Goal**: Enable backend to verify JWT tokens statelessly on every protected API request and return user information from token claims
 
-**Independent Test**: Make API requests with valid tokens (should succeed with 200), invalid tokens (should return 401), and no tokens (should return 401).
+**Independent Test**: Make API requests with valid tokens and matching user_id (should succeed with 200), invalid tokens (should return 401), no tokens (should return 401), and mismatched user_id in path (should return 403).
 
-### Backend Dependencies
+### Backend Dependencies (BE-001 to BE-002)
 
-- [X] T056 [US3] Add `python-jose[cryptography]` dependency to `backend/pyproject.toml`
-- [X] T057 [US3] Add `passlib[bcrypt]` dependency to `backend/pyproject.toml` (for future use)
-- [X] T058 [US3] Run `uv sync` in backend directory to install new dependencies
+- [x] T056 [US3] Add `python-jose[cryptography]` dependency to `backend/pyproject.toml`
+- [x] T057 [US3] Add `passlib[bcrypt]` dependency to `backend/pyproject.toml` (for future use)
+- [x] T058 [US3] Run `uv sync` in backend directory to install new dependencies
 
-### Backend User Model
+### JWT Verification Logic - Stateless (BE-003)
 
-- [X] T059 [US3] Create User model at `backend/app/models/user.py` with SQLModel (read-only, mirrors Better Auth schema)
-- [X] T060 [US3] Add User model fields in `backend/app/models/user.py`: id (UUID), email, emailVerified, name, image, createdAt, updatedAt
-- [X] T061 [US3] Configure User model table name as "user" in `backend/app/models/user.py`
-- [X] T062 [US3] Add field aliases for camelCase columns in `backend/app/models/user.py`
+- [x] T059 [US3] Create `backend/app/auth/jwt.py` with `verify_jwt_token()` function for stateless verification
+- [x] T060 [US3] Implement JWT decoding with HS256 algorithm in `backend/app/auth/jwt.py`
+- [x] T061 [US3] Add token signature verification using BETTER_AUTH_SECRET in `backend/app/auth/jwt.py` (NO database lookup)
+- [x] T062 [US3] Add expiration and issued-at validation in `backend/app/auth/jwt.py`
+- [x] T063 [US3] Extract user_id from token sub claim in `backend/app/auth/jwt.py`
+- [x] T064 [US3] Extract email and name from token claims in `backend/app/auth/jwt.py`
+- [x] T065 [US3] Add exception handling for expired, invalid, and malformed tokens in `backend/app/auth/jwt.py`
 
-### JWT Verification Logic
+### Authentication Dependencies - Stateless (BE-004)
 
-- [X] T063 [US3] Create `backend/app/auth/jwt.py` with `verify_jwt_token()` function
-- [X] T064 [US3] Implement JWT decoding with HS256 algorithm in `backend/app/auth/jwt.py`
-- [X] T065 [US3] Add token signature verification using BETTER_AUTH_SECRET in `backend/app/auth/jwt.py`
-- [X] T066 [US3] Add expiration and issued-at validation in `backend/app/auth/jwt.py`
-- [X] T067 [US3] Add exception handling for expired, invalid, and malformed tokens in `backend/app/auth/jwt.py`
+- [x] T066 [US3] Create `backend/app/auth/dependencies.py` with OAuth2PasswordBearer scheme
+- [x] T067 [US3] Implement `get_current_user()` dependency in `backend/app/auth/dependencies.py` for stateless verification
+- [x] T068 [US3] Extract token from Authorization header in `get_current_user()` in `backend/app/auth/dependencies.py`
+- [x] T069 [US3] Verify token signature using `verify_jwt_token()` in `get_current_user()` (stateless, NO database query)
+- [x] T070 [US3] Extract user_id from verified token claims in `get_current_user()` in `backend/app/auth/dependencies.py`
+- [x] T071 [US3] Return user_id string from `get_current_user()` or raise 401 HTTPException
+- [x] T072 [US3] Implement `verify_path_user_id()` dependency in `backend/app/auth/dependencies.py` for path-based security
+- [x] T073 [US3] Compare path user_id parameter with token user_id in `verify_path_user_id()`
+- [x] T074 [US3] Raise 403 Forbidden if path user_id does not match token user_id in `verify_path_user_id()`
 
-### Authentication Dependency
+### API Endpoint Implementation - Stateless (BE-006 to BE-008)
 
-- [X] T068 [US3] Create `backend/app/auth/dependencies.py` with OAuth2PasswordBearer scheme
-- [X] T069 [US3] Implement `get_current_user()` dependency in `backend/app/auth/dependencies.py`
-- [X] T070 [US3] Extract token from Authorization header in `get_current_user()` in `backend/app/auth/dependencies.py`
-- [X] T071 [US3] Verify token signature using `verify_jwt_token()` in `get_current_user()` in `backend/app/auth/dependencies.py`
-- [X] T072 [US3] Extract user ID from token claims (sub) in `get_current_user()` in `backend/app/auth/dependencies.py`
-- [X] T073 [US3] Query database to validate user exists in `get_current_user()` in `backend/app/auth/dependencies.py`
-- [X] T074 [US3] Raise 401 HTTPException for invalid/missing tokens in `get_current_user()` in `backend/app/auth/dependencies.py`
+- [x] T075 [US3] Create auth endpoints file at `backend/app/api/v1/endpoints/auth.py`
+- [x] T076 [US3] Implement GET `/api/v1/users/{user_id}/me` endpoint in `backend/app/api/v1/endpoints/auth.py`
+- [x] T077 [US3] Add path parameter `user_id` to endpoint in `backend/app/api/v1/endpoints/auth.py`
+- [x] T078 [US3] Add `verify_path_user_id` dependency to endpoint (which uses `get_current_user` internally)
+- [x] T079 [US3] Return user information from token claims only (user_id, email, name, status, message) - NO database query
+- [x] T080 [US3] Create API v1 router at `backend/app/api/v1/router.py`
+- [x] T081 [US3] Register auth endpoints in v1 router in `backend/app/api/v1/router.py`
+- [x] T082 [US3] Update `backend/app/main.py` to include v1 router with `/api/v1` prefix
 
-### API Endpoint Implementation
+### CORS Configuration (BE-009)
 
-- [X] T075 [US3] Create auth endpoints file at `backend/app/api/v1/endpoints/auth.py`
-- [X] T076 [US3] Implement GET `/api/v1/me` endpoint in `backend/app/api/v1/endpoints/auth.py`
-- [X] T077 [US3] Add `get_current_user` dependency to `/api/v1/me` endpoint in `backend/app/api/v1/endpoints/auth.py`
-- [X] T078 [US3] Return user information (user_id, email, name, status) from `/api/v1/me` in `backend/app/api/v1/endpoints/auth.py`
-- [X] T079 [US3] Create API v1 router at `backend/app/api/v1/router.py`
-- [X] T080 [US3] Register auth endpoints in v1 router in `backend/app/api/v1/router.py`
-- [X] T081 [US3] Update `backend/app/main.py` to include v1 router with `/api/v1` prefix
+- [x] T083 [US3] Update CORS middleware in `backend/app/main.py` to allow frontend origin (http://localhost:3000)
+- [x] T084 [US3] Configure CORS to allow Authorization header in `backend/app/main.py`
+- [x] T085 [US3] Configure CORS to allow credentials in `backend/app/main.py`
 
-### CORS Configuration
-
-- [X] T082 [US3] Update CORS middleware in `backend/app/main.py` to allow frontend origin (http://localhost:3000)
-- [X] T083 [US3] Configure CORS to allow Authorization header in `backend/app/main.py`
-- [X] T084 [US3] Configure CORS to allow credentials in `backend/app/main.py`
-
-**Checkpoint**: Backend successfully verifies JWT tokens. `/api/v1/me` returns user data for valid tokens and 401 for invalid/missing tokens. Test with curl or Postman.
+**Checkpoint**: Backend successfully verifies JWT tokens statelessly (NO database lookups). `/api/v1/users/{user_id}/me` returns user data from token claims for valid tokens with matching path user_id, 403 for mismatched user_id, and 401 for invalid/missing tokens. Verify NO database queries during token verification.
 
 ---
 
 ## Phase 6: User Story 4 - Database Connectivity (Priority: P1)
 
-**Goal**: Verify both frontend and backend connect to the same Neon PostgreSQL database with shared authentication data
+**Goal**: Verify frontend connects to Neon PostgreSQL database and backend performs stateless token verification without database dependency
 
-**Independent Test**: Verify both frontend and backend can connect to database, authentication tables exist and are accessible, and user records are shared.
+**Independent Test**: Verify frontend can connect to database and create authentication tables, user records are created correctly, and backend verifies tokens statelessly without database queries.
 
-### Database Verification
+### Database Verification (Frontend Only)
 
-- [X] T085 [US4] Verify Better Auth created all required tables in Neon (user, session, account, verification)
-- [X] T086 [US4] Verify backend can query user table successfully (check logs)
-- [X] T087 [US4] Sign up via frontend and verify user record exists in Neon database
-- [X] T088 [US4] Sign in via frontend and verify session record exists in Neon database
-- [X] T089 [US4] Call backend `/api/v1/me` endpoint and verify user ID matches database record
-- [X] T090 [US4] Test account linking: sign up with email, sign in with Google (same email), verify single user with two accounts in database
+- [x] T086 [US4] Verify Better Auth created all required tables in Neon (user, session, account, verification)
+- [ ] T087 [US4] Sign up via frontend and verify user record exists in Neon database
+- [ ] T088 [US4] Sign in via frontend and verify session record exists in Neon database
+- [ ] T089 [US4] Test account linking: sign up with email, sign in with Google (same email), verify single user with two accounts in database
+
+### Stateless Verification (Backend)
+
+- [x] T090 [US4] Call backend `/api/v1/users/{user_id}/me` endpoint with valid token and matching user_id - verify 200 response with user data from token claims
+- [x] T091 [US4] Call backend `/api/v1/users/{wrong_user_id}/me` endpoint with valid token but mismatched user_id - verify 403 Forbidden response
+- [x] T092 [US4] Verify backend logs show NO database queries during token verification (stateless operation confirmed)
 
 ### Error Handling Verification
 
-- [X] T091 [US4] Test database connection failure handling in frontend (temporarily use invalid DATABASE_URL)
-- [X] T092 [US4] Test database connection failure handling in backend (temporarily use invalid DATABASE_URL)
-- [X] T093 [US4] Verify clear error messages displayed for database connection issues
+- [ ] T093 [US4] Test database connection failure handling in frontend (temporarily use invalid DATABASE_URL)
+- [ ] T094 [US4] Verify backend token verification still works even if database is unavailable (stateless verification independent of database)
+- [ ] T095 [US4] Verify clear error messages displayed for frontend database connection issues
 
-**Checkpoint**: Both frontend and backend successfully connected to shared Neon database. Authentication data is shared and consistent. All 4 user stories are now complete and independently functional.
+**Checkpoint**: Frontend successfully connected to Neon database and creates authentication data. Backend verifies tokens statelessly without any database dependency. Path-based security enforced. All 4 user stories are now complete and independently functional.
 
 ---
 
@@ -231,41 +233,43 @@
 
 ### Documentation
 
-- [x] T094 [P] Update root `README.md` with authentication setup instructions
-- [x] T095 [P] Add troubleshooting section to `README.md` for common issues
-- [x] T096 [P] Document environment variable requirements in `README.md`
+- [x] T096 [P] Update root `README.md` with authentication setup instructions
+- [x] T097 [P] Add troubleshooting section to `README.md` for common issues
+- [x] T098 [P] Document environment variable requirements in `README.md`
 
 ### Rate Limiting Implementation
 
-- [x] T097 Create rate limiting middleware at `frontend/lib/rate-limit.ts` (Built-in Better Auth rate limiting enabled)
-- [x] T098 Implement progressive delay logic in `frontend/lib/rate-limit.ts` (1s, 2s, 5s, 10s, 30s) (Built-in Better Auth rate limiting)
-- [x] T099 Integrate rate limiting with sign-in API route handler (Built-in Better Auth rate limiting)
-- [x] T100 Test rate limiting with multiple failed sign-in attempts (Built-in Better Auth rate limiting)
+- [x] T099 Create rate limiting middleware at `frontend/lib/rate-limit.ts` (Built-in Better Auth rate limiting enabled)
+- [x] T100 Implement progressive delay logic in `frontend/lib/rate-limit.ts` (1s, 2s, 5s, 10s, 30s) (Built-in Better Auth rate limiting)
+- [x] T101 Integrate rate limiting with sign-in API route handler (Built-in Better Auth rate limiting)
+- [x] T102 Test rate limiting with multiple failed sign-in attempts (Built-in Better Auth rate limiting)
 
 ### Security Hardening
 
-- [x] T101 [P] Verify all secrets are in environment variables (no hardcoded values)
-- [x] T102 [P] Verify HTTPS enforcement in production configuration
-- [x] T103 [P] Verify httpOnly cookies are set correctly
-- [x] T104 [P] Verify CORS configuration restricts to frontend origin only
+- [x] T103 [P] Verify all secrets are in environment variables (no hardcoded values)
+- [x] T104 [P] Verify HTTPS enforcement in production configuration
+- [x] T105 [P] Verify httpOnly cookies are set correctly
+- [x] T106 [P] Verify CORS configuration restricts to frontend origin only
 
 ### End-to-End Validation
 
-- [x] T105 Run through quickstart.md verification checklist (all items)
-- [x] T106 Test complete user journey: Sign up → Sign in → Access dashboard → Call API → Sign out
-- [x] T107 Test Google OAuth flow: Sign in with Google → Verify account creation → Access dashboard
-- [x] T108 Test account linking: Email sign-up → Google sign-in (same email) → Verify single user
-- [x] T109 Test password validation: Try weak passwords → Verify rejection with clear error messages
-- [x] T110 Test concurrent sessions: Sign in on multiple devices → Verify all sessions work
-- [x] T111 Test token expiration: Wait for token to expire → Verify redirect to sign-in
-- [x] T112 Test protected routes: Access dashboard without auth → Verify redirect to sign-in
+- [ ] T107 Run through quickstart.md verification checklist (all items)
+- [ ] T108 Test complete user journey: Sign up → Sign in → Access dashboard → Call API with matching user_id → Sign out
+- [ ] T109 Test Google OAuth flow: Sign in with Google → Verify account creation → Access dashboard
+- [ ] T110 Test account linking: Email sign-up → Google sign-in (same email) → Verify single user
+- [ ] T111 Test password validation: Try weak passwords → Verify rejection with clear error messages
+- [ ] T112 Test concurrent sessions: Sign in on multiple devices → Verify all sessions work
+- [ ] T113 Test token expiration: Wait for token to expire → Verify redirect to sign-in
+- [ ] T114 Test protected routes: Access dashboard without auth → Verify redirect to sign-in
+- [ ] T115 Test path-based security: Call API with valid token but wrong user_id in path → Verify 403 Forbidden
+- [ ] T116 Test stateless verification: Call API with valid token → Verify NO database queries in backend logs
 
 ### Code Quality
 
-- [x] T113 [P] Review all code for security vulnerabilities (SQL injection, XSS, CSRF)
-- [x] T114 [P] Review error handling across all endpoints
-- [x] T115 [P] Review logging for sensitive data exposure
-- [x] T116 [P] Code cleanup and remove any debug/console logs
+- [x] T117 [P] Review all code for security vulnerabilities (SQL injection, XSS, CSRF)
+- [x] T118 [P] Review error handling across all endpoints
+- [x] T119 [P] Review logging for sensitive data exposure
+- [x] T120 [P] Code cleanup and remove any debug/console logs
 
 ---
 
@@ -293,8 +297,8 @@
 
 - **User Story 1**: Configuration → Sign-up page → Sign-in page → Landing page updates
 - **User Story 2**: Dashboard → User menu → Session persistence
-- **User Story 3**: Dependencies → User model → JWT verification → Auth dependency → API endpoint → CORS
-- **User Story 4**: Database verification → Error handling verification
+- **User Story 3**: Dependencies → JWT verification (stateless) → Auth dependencies (stateless) → API endpoint (stateless) → CORS
+- **User Story 4**: Database verification (frontend only) → Stateless verification (backend) → Error handling verification
 
 ### Parallel Opportunities
 
@@ -302,7 +306,7 @@
 - **Phase 2 (Foundational)**:
   - Environment tasks can run in parallel (T006-T010)
   - Frontend database tasks sequential (T011-T017)
-  - Backend database tasks sequential (T018-T022)
+  - Backend configuration tasks sequential (T018-T022)
   - Frontend and backend tracks can run in parallel
 - **Phase 3 (US1)**:
   - Configuration tasks can run in parallel (T023-T027)
@@ -315,17 +319,16 @@
   - Dashboard and user menu can be developed in parallel
 - **Phase 5 (US3)**:
   - Dependencies installation can run in parallel (T056-T058)
-  - User model tasks sequential (T059-T062)
-  - JWT verification tasks sequential (T063-T067)
-  - Auth dependency tasks sequential (T068-T074)
-  - API endpoint tasks sequential (T075-T081)
-  - CORS tasks can run in parallel (T082-T084)
+  - JWT verification tasks sequential (T059-T065)
+  - Auth dependency tasks sequential (T066-T074)
+  - API endpoint tasks sequential (T075-T082)
+  - CORS tasks can run in parallel (T083-T085)
 - **Phase 7 (Polish)**:
-  - Documentation tasks can run in parallel (T094-T096)
-  - Security hardening tasks can run in parallel (T101-T104)
-  - Code quality tasks can run in parallel (T113-T116)
+  - Documentation tasks can run in parallel (T096-T098)
+  - Security hardening tasks can run in parallel (T103-T106)
+  - Code quality tasks can run in parallel (T117-T120)
 
-**Key Parallel Opportunity**: After Foundational phase completes, User Story 1 (Frontend) and User Story 3 (Backend) can be developed completely in parallel by different developers.
+**Key Parallel Opportunity**: After Foundational phase completes, User Story 1 (Frontend) and User Story 3 (Backend) can be developed completely in parallel by different developers. Backend verification is stateless and independent of database.
 
 ---
 
@@ -365,9 +368,9 @@ Task: "User Story 3 - Backend Token Verification" (Backend Developer)
 2. Complete Phase 2: Foundational (T005-T022) - CRITICAL - blocks all stories
 3. Complete Phase 3: User Story 1 (T023-T041) - Sign-up and sign-in working
 4. Complete Phase 4: User Story 2 (T042-T055) - Protected routes and sessions working
-5. Complete Phase 5: User Story 3 (T056-T084) - Backend token verification working
+5. Complete Phase 5: User Story 3 (T056-T085) - Backend token verification working
 6. **STOP and VALIDATE**: Test end-to-end flow (sign up → sign in → access dashboard → call API)
-7. Complete Phase 6: User Story 4 (T085-T093) - Verify database connectivity
+7. Complete Phase 6: User Story 4 (T086-T095) - Verify database connectivity
 8. Deploy/demo if ready
 
 ### Incremental Delivery
@@ -387,10 +390,10 @@ With multiple developers:
 1. Team completes Setup + Foundational together (T001-T022)
 2. Once Foundational is done:
    - **Frontend Developer**: User Story 1 (T023-T041) + User Story 2 (T042-T055)
-   - **Backend Developer**: User Story 3 (T056-T084)
-   - **QA/Integration**: User Story 4 (T085-T093) after US1, US2, US3 complete
+   - **Backend Developer**: User Story 3 (T056-T085)
+   - **QA/Integration**: User Story 4 (T086-T095) after US1, US2, US3 complete
 3. Stories complete and integrate independently
-4. Team completes Polish together (T094-T116)
+4. Team completes Polish together (T096-T120)
 
 ---
 
@@ -404,24 +407,33 @@ With multiple developers:
 - Commit after each task or logical group
 - Stop at any checkpoint to validate story independently
 - Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence
-- Follow layered approach: Database → Frontend → Backend
+- Follow layered approach from plan.md: Database → Frontend → Backend
 - Verify each layer before proceeding to next
 
 ---
 
 ## Task Count Summary
 
-- **Total Tasks**: 116
-- **Phase 1 (Setup)**: 4 tasks
-- **Phase 2 (Foundational)**: 18 tasks
-- **Phase 3 (User Story 1)**: 19 tasks
-- **Phase 4 (User Story 2)**: 14 tasks
-- **Phase 5 (User Story 3)**: 29 tasks
-- **Phase 6 (User Story 4)**: 9 tasks
-- **Phase 7 (Polish)**: 23 tasks
+- **Total Tasks**: 120
+- **Phase 1 (Setup)**: 4 tasks (T001-T004)
+- **Phase 2 (Foundational)**: 18 tasks (T005-T022)
+- **Phase 3 (User Story 1)**: 19 tasks (T023-T041)
+- **Phase 4 (User Story 2)**: 14 tasks (T042-T055)
+- **Phase 5 (User Story 3)**: 30 tasks (T056-T085)
+- **Phase 6 (User Story 4)**: 10 tasks (T086-T095)
+- **Phase 7 (Polish)**: 25 tasks (T096-T120)
 
-**Parallel Opportunities**: 35+ tasks marked [P] can run in parallel within their phases
+**Key Implementation Details from plan.md**:
 
-**MVP Scope**: Phases 1-6 (93 tasks) deliver complete authentication system with all 4 user stories
+- Backend uses STATELESS JWT verification (NO database lookups for token verification)
+- Token verification is purely cryptographic using BETTER_AUTH_SECRET
+- Path-based security enforced: user_id in URL path must match token sub claim
+- Backend does NOT need User model for token verification
+- Database connection in backend reserved for future task CRUD operations
+- Zero-trust architecture: Backend never trusts client claims, only verified token signatures
 
-**Suggested First Milestone**: Complete through Phase 5 (84 tasks) for end-to-end authentication flow, then validate with Phase 6
+**Parallel Opportunities**: 40+ tasks marked [P] can run in parallel within their phases
+
+**MVP Scope**: Phases 1-6 (95 tasks) deliver complete stateless authentication system with all 4 user stories
+
+**Suggested First Milestone**: Complete through Phase 5 (85 tasks) for end-to-end stateless authentication flow, then validate with Phase 6

@@ -1,66 +1,111 @@
-import Link from "next/link";
+'use client'
 
-export default function Home() {
+import { useSession } from '@/lib/auth-client'
+import { useRouter } from 'next/navigation'
+
+export default function LandingPage() {
+  const { data: session } = useSession()
+  const router = useRouter()
+  const isAuthenticated = !!session?.user
+
+  const handleGetStarted = () => {
+    router.push(isAuthenticated ? '/dashboard' : '/sign-in')
+  }
+
+  const handleSignIn = () => {
+    router.push(isAuthenticated ? '/dashboard' : '/sign-in')
+  }
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-linear-to-b from-blue-50 to-white">
-      <div className="text-center space-y-8">
-        <h1 className="text-5xl font-bold text-gray-900">
-          Phase 2 Todo App
-        </h1>
-        <p className="mt-4 text-xl text-gray-600 max-w-2xl">
-          A secure, modern task management application with authentication
-        </p>
+    <div className="bg-background">
+      {/* Hero Section */}
+      <section className="container mx-auto px-4 py-16 md:py-24 lg:py-32">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6">
+            Manage Your Tasks Effortlessly
+          </h1>
+          <p className="text-lg md:text-xl lg:text-2xl text-foreground mb-8 max-w-2xl mx-auto">
+            Simple, powerful task management for busy professionals. Stay organized, boost productivity, and never miss a deadline.
+          </p>
 
-        <div className="flex gap-4 justify-center mt-8">
-          <Link
-            href="/sign-in"
-            className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-md"
-          >
-            Sign In
-          </Link>
-          <Link
-            href="/sign-up"
-            className="px-6 py-3 bg-white text-blue-600 font-medium rounded-lg hover:bg-gray-50 transition-colors shadow-md border-2 border-blue-600"
-          >
-            Sign Up
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <button
+              onClick={handleGetStarted}
+              className="w-full sm:w-auto bg-accent text-white px-8 py-3 rounded-lg text-lg font-semibold hover:opacity-90 transition-opacity shadow-card"
+            >
+              Get Started
+            </button>
+            <button
+              onClick={handleSignIn}
+              className="w-full sm:w-auto border-2 border-accent text-accent px-8 py-3 rounded-lg text-lg font-semibold hover:bg-accent hover:text-white transition-colors"
+            >
+              Sign In
+            </button>
+          </div>
         </div>
+      </section>
 
-        <div className="mt-12 pt-8 border-t border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Features
+      {/* Features Section */}
+      <section className="container mx-auto px-4 py-16 md:py-24">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground text-center mb-12">
+            Everything You Need to Stay Organized
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left max-w-4xl mx-auto">
-            <div className="p-4 bg-white rounded-lg shadow-sm">
-              <div className="text-2xl mb-2">🔐</div>
-              <h3 className="font-semibold text-gray-900 mb-1">
-                Secure Authentication
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Feature 1 */}
+            <div className="bg-background shadow-card rounded-lg p-6 hover:shadow-lg transition-shadow">
+              <div className="text-4xl mb-4">✓</div>
+              <h3 className="text-xl font-bold text-foreground mb-3">
+                Simple Task Management
               </h3>
-              <p className="text-sm text-gray-600">
-                Email/password and Google OAuth with JWT tokens
+              <p className="text-foreground">
+                Create, edit, and organize your tasks with an intuitive interface designed for speed and efficiency.
               </p>
             </div>
-            <div className="p-4 bg-white rounded-lg shadow-sm">
-              <div className="text-2xl mb-2">💾</div>
-              <h3 className="font-semibold text-gray-900 mb-1">
-                Persistent Sessions
+
+            {/* Feature 2 */}
+            <div className="bg-background shadow-card rounded-lg p-6 hover:shadow-lg transition-shadow">
+              <div className="text-4xl mb-4">🔐</div>
+              <h3 className="text-xl font-bold text-foreground mb-3">
+                Secure & Private
               </h3>
-              <p className="text-sm text-gray-600">
-                Stay signed in for 7 days with secure httpOnly cookies
+              <p className="text-foreground">
+                Your data is protected with enterprise-grade security. Only you can access your tasks.
               </p>
             </div>
-            <div className="p-4 bg-white rounded-lg shadow-sm">
-              <div className="text-2xl mb-2">🛡️</div>
-              <h3 className="font-semibold text-gray-900 mb-1">
-                Protected Routes
+
+            {/* Feature 3 */}
+            <div className="bg-background shadow-card rounded-lg p-6 hover:shadow-lg transition-shadow">
+              <div className="text-4xl mb-4">📱</div>
+              <h3 className="text-xl font-bold text-foreground mb-3">
+                Works Everywhere
               </h3>
-              <p className="text-sm text-gray-600">
-                Zero-trust architecture with backend token verification
+              <p className="text-foreground">
+                Access your tasks from any device. Responsive design ensures a great experience on mobile, tablet, and desktop.
               </p>
             </div>
           </div>
         </div>
-      </div>
-    </main>
-  );
+      </section>
+
+      {/* CTA Section */}
+      <section className="container mx-auto px-4 py-16 md:py-24">
+        <div className="max-w-3xl mx-auto text-center bg-background shadow-card rounded-lg p-8 md:p-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+            Ready to Get Started?
+          </h2>
+          <p className="text-lg text-foreground mb-8">
+            Join thousands of professionals who trust TaskApp to manage their daily tasks.
+          </p>
+          <button
+            onClick={handleGetStarted}
+            className="bg-accent text-white px-8 py-3 rounded-lg text-lg font-semibold hover:opacity-90 transition-opacity shadow-card"
+          >
+            Start Managing Tasks Now
+          </button>
+        </div>
+      </section>
+    </div>
+  )
 }

@@ -7,10 +7,10 @@
 
 ## Overview
 
-This document defines the database schema for the authentication system. The schema is **managed by Better Auth** on the frontend, which automatically creates and maintains these tables in the Neon PostgreSQL database. The backend uses **read-only SQLModel models** to access user data for token verification.
+This document defines the database schema for the authentication system. The schema is **managed by Better Auth** on the frontend, which automatically creates and maintains these tables in the Neon PostgreSQL database. The backend performs **stateless JWT token verification** without database lookups.
 
 **Schema Ownership**: Better Auth (Frontend)
-**Backend Access**: Read-only via SQLModel
+**Backend Access**: NO database access for token verification (stateless)
 **Database**: Neon Serverless PostgreSQL
 
 ---
@@ -98,31 +98,11 @@ This document defines the database schema for the authentication system. The sch
 - Primary key on `id`
 - Unique index on `email`
 
-**Backend Model** (`app/models/user.py`):
-```python
-from sqlmodel import SQLModel, Field
-from datetime import datetime
-from typing import Optional
-import uuid
-
-class User(SQLModel, table=True):
-    """
-    User model (read-only for backend).
-    Schema managed by Better Auth on frontend.
-    """
-    __tablename__ = "user"
-
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    email: str = Field(unique=True, index=True)
-    emailVerified: bool = Field(default=False, alias="emailVerified")
-    name: Optional[str] = None
-    image: Optional[str] = None
-    createdAt: datetime = Field(default_factory=datetime.utcnow, alias="createdAt")
-    updatedAt: datetime = Field(default_factory=datetime.utcnow, alias="updatedAt")
-
-    class Config:
-        populate_by_name = True  # Allow both snake_case and camelCase
-```
+**Backend Model**:
+- Backend does NOT need User model for stateless token verification
+- Token verification is purely cryptographic (no database access)
+- User information is extracted from verified JWT token claims
+- Database models will be added in future phases for task CRUD operations
 
 **Validation Rules**:
 - Email must be valid email format
@@ -176,7 +156,7 @@ class User(SQLModel, table=True):
 
 **Concurrent Sessions**: Unlimited - users can have multiple active sessions across different devices
 
-**Backend Access**: Backend does NOT directly query session table; it verifies JWT tokens cryptographically
+**Backend Access**: Backend does NOT query session table; it verifies JWT tokens statelessly using cryptographic signature verification only
 
 ---
 
@@ -339,13 +319,16 @@ UNIQUE (token);
 
 ### Backend (FastAPI)
 
-**Read Operations ONLY**:
-- Query user by ID (from JWT token) for verification
-- Validate user exists in database
+**Stateless Token Verification**:
+- NO database queries for token verification
+- Token verification is purely cryptographic using BETTER_AUTH_SECRET
+- User information extracted from verified JWT token claims only
+- Path-based security: verify user_id in URL matches token sub claim
 
-**No Write Operations**:
-- Backend NEVER creates, updates, or deletes auth data
-- All auth mutations handled by Better Auth on frontend
+**No Database Operations**:
+- Backend NEVER queries, creates, updates, or deletes auth data
+- All auth operations handled by Better Auth on frontend
+- Database models will be added in future phases for task CRUD
 
 ---
 

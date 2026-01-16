@@ -5,16 +5,16 @@ info:
     Backend API for authentication and user verification.
 
     This API provides endpoints for verifying JWT tokens issued by Better Auth
-    on the frontend. The backend implements zero-trust architecture, verifying
-    every token signature and validating user existence in the database.
+    on the frontend. The backend implements zero-trust architecture with stateless
+    token verification and path-based security.
 
     **Authentication Flow**:
     1. User signs in via frontend (Better Auth)
     2. Frontend issues JWT token stored in httpOnly cookie
     3. Frontend makes API request with token in Authorization header
-    4. Backend verifies token signature using shared BETTER_AUTH_SECRET
-    5. Backend validates user exists in database
-    6. Backend returns user information or 401 Unauthorized
+    4. Backend verifies token signature statelessly using shared BETTER_AUTH_SECRET
+    5. Backend validates user_id in URL path matches token sub claim
+    6. Backend returns user information from token claims or 401/403 error
 
   version: 1.0.0
   contact:
@@ -31,7 +31,7 @@ tags:
     description: User authentication and verification endpoints
 
 paths:
-  /api/v1/me:
+  /api/v1/users/{user_id}/me:
     get:
       tags:
         - Authentication
@@ -39,21 +39,32 @@ paths:
       description: |
         Returns information about the currently authenticated user.
 
-        This endpoint serves as a test endpoint to verify JWT token verification
-        is working correctly. It demonstrates the zero-trust architecture where
-        the backend verifies every token and validates user existence.
+        This endpoint demonstrates stateless JWT token verification with path-based
+        security. The backend verifies the token signature and ensures the user_id
+        in the URL path matches the sub claim in the JWT token.
 
         **Authentication Required**: Yes (JWT Bearer token)
+        **Path-Based Security**: user_id in path must match token sub claim
 
         **Use Cases**:
         - Verify user is authenticated
-        - Get user profile information
-        - Test JWT token verification
-        - Validate session is still active
+        - Get user profile information from token claims
+        - Test stateless JWT token verification
+        - Validate path-based security enforcement
 
       operationId: getCurrentUser
       security:
         - BearerAuth: []
+
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: User ID (must match the sub claim in JWT token)
+          schema:
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
 
       responses:
         '200':
@@ -64,12 +75,13 @@ paths:
                 $ref: '#/components/schemas/UserResponse'
               examples:
                 success:
-                  summary: Successful authentication
+                  summary: Successful authentication with matching user_id
                   value:
                     user_id: "550e8400-e29b-41d4-a716-446655440000"
                     email: "user@example.com"
                     name: "John Doe"
                     status: "authenticated"
+                    message: "Token verified statelessly - no database lookup performed"
 
         '401':
           description: Unauthorized - Invalid, expired, or missing token
@@ -86,10 +98,18 @@ paths:
                   summary: Invalid or expired token
                   value:
                     detail: "Could not validate credentials"
-                user_not_found:
-                  summary: User from token not found in database
+
+        '403':
+          description: Forbidden - User ID in path does not match token user ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                user_id_mismatch:
+                  summary: Path user_id does not match token sub claim
                   value:
-                    detail: "Could not validate credentials"
+                    detail: "User ID in path does not match token user ID"
 
         '500':
           description: Internal server error
@@ -99,7 +119,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
               examples:
                 server_error:
-                  summary: Database connection error
+                  summary: Token verification error
                   value:
                     detail: "Internal server error"
 
@@ -174,7 +194,7 @@ components:
         name:
           type: string
           nullable: true
-          description: User's display name
+          description: User's display name (from token claims)
           example: "John Doe"
         status:
           type: string
@@ -182,12 +202,16 @@ components:
             - authenticated
           description: Authentication status
           example: "authenticated"
+        message:
+          type: string
+          description: Verification method confirmation
+          example: "Token verified statelessly - no database lookup performed"
       description: |
-        Authenticated user information returned by /api/v1/me endpoint.
+        Authenticated user information returned by /api/v1/users/{user_id}/me endpoint.
 
-        **Data Source**: User table in Neon PostgreSQL database
+        **Data Source**: JWT token claims (stateless verification)
         **User ID Source**: Extracted from verified JWT token (sub claim)
-        **Validation**: User existence validated in database after token verification
+        **Validation**: Token signature verified cryptographically, user_id in path matches token sub claim
 
     ErrorResponse:
       type: object
@@ -203,13 +227,14 @@ components:
 
         **HTTP Status Codes**:
         - 401: Authentication failure (invalid/missing token)
-        - 403: Authorization failure (valid token, insufficient permissions)
+        - 403: Path-based security failure (user_id mismatch)
         - 500: Internal server error
 
         **Error Messages**:
         - "Not authenticated": Missing Authorization header
-        - "Could not validate credentials": Invalid/expired token or user not found
-        - "Internal server error": Database or server error
+        - "Could not validate credentials": Invalid/expired token
+        - "User ID in path does not match token user ID": Path-based security violation
+        - "Internal server error": Token verification error
 
 security:
   - BearerAuth: []

@@ -10,8 +10,9 @@ Implement a hybrid authentication architecture where the Frontend (Next.js + Bet
 **Key Technical Approach**:
 - **Database**: Shared Neon PostgreSQL with Better Auth auto-creating tables (user, session, account, verification)
 - **Frontend Token Issuer**: Better Auth library handling email/password + Google OAuth, storing tokens in httpOnly cookies
-- **Backend Token Verifier**: FastAPI dependency (`get_current_user`) verifying JWT signatures using shared BETTER_AUTH_SECRET
-- **Zero-Trust Model**: Backend never trusts client claims; always verifies token signatures and validates user existence in database
+- **Backend Token Verifier**: FastAPI dependency (`get_current_user`) verifying JWT signatures statelessly using shared BETTER_AUTH_SECRET (NO database lookup)
+- **Path-Based Security**: Backend verifies that `user_id` in URL path matches `sub` claim in JWT token (403 Forbidden if mismatch)
+- **Zero-Trust Model**: Backend never trusts client claims; always verifies token signatures cryptographically without database lookups
 
 ## Technical Context
 
@@ -100,11 +101,12 @@ Implement a hybrid authentication architecture where the Frontend (Next.js + Bet
 ### Principle VI: API-First Backend Design ✅
 - **Status**: PASS
 - **Evidence**:
-  - Backend exposes stateless REST API (`GET /api/v1/me`)
+  - Backend exposes stateless REST API (`GET /api/v1/users/{user_id}/me`)
   - API versioning via URL path (`/api/v1/`)
-  - Standard HTTP status codes (200 OK, 401 Unauthorized)
+  - Standard HTTP status codes (200 OK, 401 Unauthorized, 403 Forbidden)
+  - Path-based security enforced (user_id in path must match token)
   - Input validation via Pydantic models
-- **Compliance**: Test endpoint demonstrates API-first approach
+- **Compliance**: Test endpoint demonstrates API-first approach with stateless verification
 
 **Overall Gate Status**: ✅ PASS - All constitutional principles satisfied
 
@@ -135,14 +137,11 @@ backend/
 │   ├── __init__.py
 │   ├── main.py                    # FastAPI app with CORS, health endpoint
 │   ├── config.py                  # NEW: Environment variable configuration
-│   ├── database.py                # NEW: SQLModel database connection
-│   ├── models/
-│   │   ├── __init__.py
-│   │   └── user.py                # NEW: User model (read-only for backend)
+│   ├── database.py                # NEW: SQLModel database connection (for future use)
 │   ├── auth/
 │   │   ├── __init__.py
-│   │   ├── dependencies.py        # NEW: get_current_user dependency
-│   │   └── jwt.py                 # NEW: JWT verification logic
+│   │   ├── dependencies.py        # NEW: get_current_user, verify_path_user_id dependencies
+│   │   └── jwt.py                 # NEW: Stateless JWT verification logic
 │   └── api/
 │       ├── __init__.py
 │       └── v1/
@@ -150,7 +149,7 @@ backend/
 │           ├── router.py          # NEW: API v1 router
 │           └── endpoints/
 │               ├── __init__.py
-│               └── auth.py        # NEW: /api/v1/me endpoint
+│               └── auth.py        # NEW: /api/v1/users/{user_id}/me endpoint
 ├── tests/                         # Future: Integration tests
 ├── .env.example                   # UPDATED: Add auth-related variables
 ├── .env                           # NEW: Local environment variables (gitignored)
@@ -202,16 +201,17 @@ README.md                          # UPDATED: Add authentication setup instructi
 
 **Expected Output**: Configuration pattern for `lib/auth.ts` and route handler setup
 
-#### R2: JWT Verification in FastAPI
-**Question**: How to verify Better Auth JWT tokens in FastAPI using shared secret?
+#### R2: JWT Verification in FastAPI (Stateless)
+**Question**: How to verify Better Auth JWT tokens in FastAPI using shared secret WITHOUT database lookups?
 **Research Areas**:
-- JWT token structure from Better Auth (algorithm, claims)
+- JWT token structure from Better Auth (algorithm, claims, especially `sub` claim for user ID)
 - Python libraries for JWT verification (python-jose vs PyJWT)
-- FastAPI dependency injection pattern for authentication
+- FastAPI dependency injection pattern for stateless authentication
 - Token extraction from Authorization header
 - Error handling for invalid/expired tokens
+- Path-based security: extracting user_id from URL path and comparing with token `sub` claim
 
-**Expected Output**: Implementation pattern for `get_current_user` dependency
+**Expected Output**: Implementation pattern for stateless `get_current_user` dependency with path-based security
 
 #### R3: Shared Database Connection Strategy
 **Question**: How to connect both Better Auth (frontend) and SQLModel (backend) to same Neon database?
@@ -293,8 +293,9 @@ README.md                          # UPDATED: Add authentication setup instructi
    - `createdAt` (timestamp)
 
 **Backend Models** (SQLModel, read-only):
-- Backend only needs to read from User table for token verification
-- No write operations in this phase
+- Backend does NOT need User model for stateless token verification
+- Database models will be added in future phases for task CRUD operations
+- Token verification is purely cryptographic (no database access)
 
 **Deliverable**: `data-model.md` with complete schema documentation
 
@@ -302,13 +303,13 @@ README.md                          # UPDATED: Add authentication setup instructi
 
 **Objective**: Define REST API contracts for authentication endpoints
 
-**Endpoint**: `GET /api/v1/me`
+**Endpoint**: `GET /api/v1/users/{user_id}/me`
 
-**Purpose**: Test endpoint to verify JWT token verification is working
+**Purpose**: Test endpoint to verify stateless JWT token verification and path-based security
 
 **Request**:
 ```
-GET /api/v1/me HTTP/1.1
+GET /api/v1/users/550e8400-e29b-41d4-a716-446655440000/me HTTP/1.1
 Host: localhost:8000
 Authorization: Bearer <jwt_token>
 ```
@@ -319,7 +320,8 @@ Authorization: Bearer <jwt_token>
   "user_id": "550e8400-e29b-41d4-a716-446655440000",
   "email": "user@example.com",
   "name": "John Doe",
-  "status": "authenticated"
+  "status": "authenticated",
+  "message": "Token verified statelessly - no database lookup performed"
 }
 ```
 
@@ -334,6 +336,13 @@ Authorization: Bearer <jwt_token>
 ```json
 {
   "detail": "Authorization header missing"
+}
+```
+
+**Response (Forbidden - 403)**:
+```json
+{
+  "detail": "User ID in path does not match token user ID"
 }
 ```
 
@@ -384,13 +393,13 @@ Authorization: Bearer <jwt_token>
 
 **Verification**:
 - Frontend: Run Next.js dev server, verify Better Auth creates tables in Neon
-- Backend: Run FastAPI server, verify SQLModel connects to Neon successfully
+- Backend: Run FastAPI server, verify it starts successfully
 - Database: Query Neon console to confirm tables exist (user, session, account, verification)
 
 **Success Criteria**:
-- Both frontend and backend start without database connection errors
+- Frontend starts without database connection errors
+- Backend starts successfully (database connection for future use)
 - Better Auth tables visible in Neon console
-- Backend can query user table (even if empty)
 
 ### Layer 2: Frontend Authentication (Token Issuer)
 
@@ -446,46 +455,56 @@ Authorization: Bearer <jwt_token>
 - Password validation enforces complexity requirements
 - Account linking works for email and Google OAuth
 
-### Layer 3: Backend Token Verification (Token Verifier)
+### Layer 3: Backend Token Verification (Stateless Token Verifier)
 
-**Objective**: Implement JWT token verification and protected API endpoint
+**Objective**: Implement stateless JWT token verification with path-based security and protected API endpoint
 
 **Tasks**:
 1. **BE-001**: Add dependencies to `pyproject.toml`
    - `python-jose[cryptography]` for JWT verification
    - `passlib[bcrypt]` for password hashing (future use)
 2. **BE-002**: Run `uv sync` to install new dependencies
-3. **BE-003**: Create `app/models/user.py` with SQLModel User model (read-only)
-4. **BE-004**: Create `app/auth/jwt.py` with JWT verification logic
-   - Function to decode and verify JWT token
-   - Extract user ID from token claims
+3. **BE-003**: Create `app/auth/jwt.py` with stateless JWT verification logic
+   - Function to decode and verify JWT token signature using BETTER_AUTH_SECRET
+   - Extract user ID from token `sub` claim
    - Handle expired/invalid tokens
-5. **BE-005**: Create `app/auth/dependencies.py` with `get_current_user` dependency
+   - NO database lookups - purely cryptographic verification
+4. **BE-004**: Create `app/auth/dependencies.py` with stateless `get_current_user` dependency
    - Extract token from Authorization header
-   - Verify token signature using BETTER_AUTH_SECRET
-   - Query database to validate user exists
-   - Return user object or raise 401 HTTPException
-6. **BE-006**: Create `app/api/v1/endpoints/auth.py` with `/me` endpoint
-   - Use `get_current_user` dependency
-   - Return authenticated user information
+   - Verify token signature using BETTER_AUTH_SECRET (stateless)
+   - Extract user_id from token `sub` claim
+   - Return user_id string or raise 401 HTTPException
+   - NO database queries performed
+5. **BE-005**: Create `app/auth/dependencies.py` with `verify_path_user_id` dependency
+   - Accept path parameter `user_id` and token user_id from `get_current_user`
+   - Compare path user_id with token user_id
+   - Raise 403 Forbidden if mismatch
+   - Return user_id if match
+6. **BE-006**: Create `app/api/v1/endpoints/auth.py` with `/users/{user_id}/me` endpoint
+   - Use `verify_path_user_id` dependency (which internally uses `get_current_user`)
+   - Return authenticated user information from token claims only
+   - NO database queries
 7. **BE-007**: Create `app/api/v1/router.py` to register auth endpoints
 8. **BE-008**: Update `app/main.py` to include v1 router
 9. **BE-009**: Update CORS configuration to allow frontend origin
 
 **Verification**:
 - Sign in via frontend → Copy JWT token from browser cookies/network tab
-- Call `GET /api/v1/me` with valid token → 200 OK with user information
-- Call `GET /api/v1/me` with invalid token → 401 Unauthorized
-- Call `GET /api/v1/me` with expired token → 401 Unauthorized
-- Call `GET /api/v1/me` without token → 401 Unauthorized
-- Verify user ID from token matches database record
+- Extract user_id from token (decode JWT to see `sub` claim)
+- Call `GET /api/v1/users/{correct_user_id}/me` with valid token → 200 OK with user information
+- Call `GET /api/v1/users/{wrong_user_id}/me` with valid token → 403 Forbidden (path-based security)
+- Call `GET /api/v1/users/{user_id}/me` with invalid token → 401 Unauthorized
+- Call `GET /api/v1/users/{user_id}/me` with expired token → 401 Unauthorized
+- Call `GET /api/v1/users/{user_id}/me` without token → 401 Unauthorized
+- Verify NO database queries are made during token verification (check logs/profiler)
 
 **Success Criteria**:
-- Backend successfully verifies JWT tokens from Better Auth
-- `/api/v1/me` endpoint returns user information for valid tokens
+- Backend successfully verifies JWT tokens from Better Auth statelessly
+- `/api/v1/users/{user_id}/me` endpoint returns user information for valid tokens with matching path
+- Path-based security enforced: mismatched user_id in path returns 403 Forbidden
 - Invalid/missing tokens return 401 Unauthorized
-- User identity from token matches database record
-- Zero-trust architecture enforced (backend never trusts client claims)
+- Zero database lookups during token verification (stateless)
+- Zero-trust architecture enforced (backend never trusts client claims, only verified token signatures)
 
 ## Implementation Sequence
 
@@ -509,9 +528,9 @@ Authorization: Bearer <jwt_token>
    - Verify: Backend verifies tokens and returns user data
 
 **Phase 3**: Integration Testing
-1. End-to-end flow: Sign up → Sign in → Call API → Verify response
-2. Error scenarios: Invalid tokens, expired tokens, missing tokens
-3. Edge cases: Account linking, concurrent sessions, password validation
+1. End-to-end flow: Sign up → Sign in → Call API with correct user_id → Verify response
+2. Error scenarios: Invalid tokens, expired tokens, missing tokens, mismatched user_id in path
+3. Edge cases: Account linking, concurrent sessions, password validation, path-based security
 
 ## Risk Mitigation
 
@@ -531,7 +550,8 @@ Authorization: Bearer <jwt_token>
 **Mitigation**:
 - Research Better Auth default JWT algorithm (likely HS256)
 - Configure python-jose to use same algorithm
-- Add algorithm validation in backend JWT verification
+- Add algorithm validation in backend stateless JWT verification
+- Ensure no database lookups are performed during verification
 
 ### Risk 4: CORS Configuration Issues
 **Mitigation**:
@@ -549,7 +569,7 @@ Authorization: Bearer <jwt_token>
 
 **Layer 1 Success**:
 - ✅ Frontend connects to Neon database
-- ✅ Backend connects to Neon database
+- ✅ Backend starts successfully
 - ✅ Better Auth creates required tables
 
 **Layer 2 Success**:
@@ -561,10 +581,11 @@ Authorization: Bearer <jwt_token>
 - ✅ Sessions persist across page refreshes
 
 **Layer 3 Success**:
-- ✅ Backend verifies JWT tokens successfully
-- ✅ `/api/v1/me` returns user data for valid tokens
+- ✅ Backend verifies JWT tokens statelessly (no database lookups)
+- ✅ `/api/v1/users/{user_id}/me` returns user data for valid tokens with matching path
+- ✅ Path-based security enforced: mismatched user_id returns 403 Forbidden
 - ✅ Invalid tokens return 401 Unauthorized
-- ✅ User identity from token matches database
+- ✅ Token verification is purely cryptographic (stateless)
 
 **Overall Success**:
 - ✅ All 29 functional requirements satisfied

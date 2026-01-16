@@ -151,10 +151,10 @@ export const auth = betterAuth({
 
 ---
 
-## R2: JWT Verification in FastAPI
+## R2: JWT Verification in FastAPI (Stateless)
 
 ### Question
-How to verify Better Auth JWT tokens in FastAPI using shared secret?
+How to verify Better Auth JWT tokens in FastAPI using shared secret WITHOUT database lookups?
 
 ### Research Findings
 
@@ -162,8 +162,9 @@ How to verify Better Auth JWT tokens in FastAPI using shared secret?
 
 Better Auth issues standard JWT tokens with:
 - **Algorithm**: HS256 (HMAC with SHA-256)
-- **Claims**: Standard JWT claims (sub, exp, iat) plus custom claims
+- **Claims**: Standard JWT claims (sub, exp, iat, email, name) plus custom claims
 - **Signature**: Signed with BETTER_AUTH_SECRET
+- **Sub Claim**: Contains user ID for path-based security verification
 
 #### Python Library Selection
 
@@ -173,6 +174,7 @@ Better Auth issues standard JWT tokens with:
   - Comprehensive JWT validation options
   - Strong exception handling
   - Supports HS256 algorithm
+  - Stateless verification (no database required)
 - **Alternative Considered**: PyJWT (rejected due to less FastAPI-specific documentation)
 
 #### Installation
@@ -180,7 +182,7 @@ Better Auth issues standard JWT tokens with:
 uv add "python-jose[cryptography]"
 ```
 
-#### FastAPI Dependency Injection Pattern
+#### FastAPI Dependency Injection Pattern (Stateless)
 
 **OAuth2 Scheme Setup:**
 ```python
@@ -196,14 +198,16 @@ from jose.exceptions import JWTError, ExpiredSignatureError, JWTClaimsError
 
 def verify_jwt_token(token: str, secret: str) -> dict:
     """
-    Verify JWT token and return decoded claims.
+    Verify JWT token statelessly and return decoded claims.
+
+    NO DATABASE LOOKUPS - purely cryptographic verification.
 
     Args:
         token: JWT token string
         secret: Shared secret for verification (BETTER_AUTH_SECRET)
 
     Returns:
-        Decoded token claims
+        Decoded token claims (sub, email, name, exp, iat)
 
     Raises:
         JWTError: If token is invalid or expired
@@ -230,26 +234,28 @@ def verify_jwt_token(token: str, secret: str) -> dict:
         raise JWTError(f"Token verification failed: {str(e)}")
 ```
 
-**Get Current User Dependency (`app/auth/dependencies.py`):**
+**Get Current User Dependency (Stateless - `app/auth/dependencies.py`):**
 ```python
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlmodel import Session, select
 from app.auth.jwt import verify_jwt_token
-from app.database import get_db
-from app.models.user import User
 from app.config import settings
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db)
-) -> User:
+    token: str = Depends(oauth2_scheme)
+) -> str:
     """
-    FastAPI dependency that extracts and verifies JWT token.
+    FastAPI dependency that extracts and verifies JWT token STATELESSLY.
 
-    Returns authenticated user or raises 401 Unauthorized.
+    NO DATABASE QUERIES - returns user_id from verified token claims only.
+
+    Returns:
+        user_id (str): User ID from token sub claim
+
+    Raises:
+        HTTPException 401: If token is invalid, expired, or missing
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -258,7 +264,7 @@ async def get_current_user(
     )
 
     try:
-        # Verify token signature and decode claims
+        # Verify token signature and decode claims (NO DATABASE ACCESS)
         payload = verify_jwt_token(token, settings.BETTER_AUTH_SECRET)
 
         # Extract user ID from token claims
@@ -269,21 +275,46 @@ async def get_current_user(
     except Exception:
         raise credentials_exception
 
-    # Validate user exists in database
-    statement = select(User).where(User.id == user_id)
-    user = db.exec(statement).first()
+    return user_id
+```
 
-    if user is None:
-        raise credentials_exception
+**Path-Based Security Dependency (`app/auth/dependencies.py`):**
+```python
+from fastapi import Depends, HTTPException, status, Path
 
-    return user
+async def verify_path_user_id(
+    path_user_id: str = Path(..., alias="user_id"),
+    token_user_id: str = Depends(get_current_user)
+) -> str:
+    """
+    Verify that user_id in URL path matches user_id from JWT token.
+
+    This enforces path-based security: users can only access their own resources.
+
+    Args:
+        path_user_id: User ID from URL path parameter
+        token_user_id: User ID from verified JWT token (sub claim)
+
+    Returns:
+        user_id (str): Verified user ID
+
+    Raises:
+        HTTPException 403: If path user_id does not match token user_id
+    """
+    if path_user_id != token_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User ID in path does not match token user ID"
+        )
+
+    return token_user_id
 ```
 
 #### Error Handling Strategy
 
 **HTTP Status Codes:**
 - **401 Unauthorized**: Invalid, expired, or missing token
-- **403 Forbidden**: Valid token but insufficient permissions (future use)
+- **403 Forbidden**: Valid token but user_id in path does not match token
 
 **Exception Types:**
 - `ExpiredSignatureError`: Token has expired
@@ -292,26 +323,23 @@ async def get_current_user(
 
 ### Implementation Pattern
 
-**Complete Dependency Pattern:**
+**Complete Stateless Dependency Pattern:**
 ```python
 # app/auth/dependencies.py
 from typing import Annotated
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Path
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
-from sqlmodel import Session, select
 
 from app.auth.jwt import verify_jwt_token
 from app.config import settings
-from app.database import get_db
-from app.models.user import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 async def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
-    db: Annotated[Session, Depends(get_db)]
-) -> User:
+    token: Annotated[str, Depends(oauth2_scheme)]
+) -> str:
+    """Stateless JWT verification - returns user_id from token claims."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -326,21 +354,30 @@ async def get_current_user(
     except JWTError:
         raise credentials_exception
 
-    user = db.exec(select(User).where(User.id == user_id)).first()
-    if user is None:
-        raise credentials_exception
+    return user_id
 
-    return user
+async def verify_path_user_id(
+    path_user_id: Annotated[str, Path(alias="user_id")],
+    token_user_id: Annotated[str, Depends(get_current_user)]
+) -> str:
+    """Path-based security - verify path user_id matches token user_id."""
+    if path_user_id != token_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User ID in path does not match token user ID"
+        )
+    return token_user_id
 ```
 
 ### Decision Summary
 
 - **Library**: python-jose[cryptography]
 - **Algorithm**: HS256 (matches Better Auth)
-- **Validation**: Verify signature, expiration, and issued-at claims
-- **User Lookup**: Always validate user exists in database after token verification
-- **Error Handling**: Return 401 Unauthorized for all authentication failures
-- **Zero-Trust**: Never trust client-provided user IDs; always extract from verified token
+- **Validation**: Verify signature, expiration, and issued-at claims STATELESSLY
+- **NO Database Lookups**: Token verification is purely cryptographic
+- **Path-Based Security**: Verify user_id in URL path matches token sub claim
+- **Error Handling**: Return 401 for invalid tokens, 403 for path mismatches
+- **Zero-Trust**: Never trust client-provided user IDs; always extract from verified token and enforce path matching
 
 ---
 
@@ -392,7 +429,7 @@ export const auth = betterAuth({
 from sqlmodel import create_engine, Session, SQLModel
 from app.config import settings
 
-# Create engine with Neon connection string
+# Create engine with Neon connection string (for future use)
 engine = create_engine(
     settings.DATABASE_URL,
     echo=True,  # Log SQL queries (disable in production)
@@ -402,12 +439,12 @@ engine = create_engine(
 )
 
 def get_db():
-    """Dependency for database sessions."""
+    """Dependency for database sessions (for future task CRUD operations)."""
     with Session(engine) as session:
         yield session
 
 def init_db():
-    """Initialize database (create tables if needed)."""
+    """Initialize database (create tables if needed - for future use)."""
     SQLModel.metadata.create_all(engine)
 ```
 
@@ -434,59 +471,46 @@ settings = Settings()
 - Suitable for serverless/edge environments
 
 **Backend (FastAPI):**
-- SQLModel engine with connection pooling
+- SQLModel engine with connection pooling (for future use)
 - `pool_size=5`: Maximum 5 concurrent connections
 - `max_overflow=10`: Allow up to 10 additional connections under load
 - `pool_pre_ping=True`: Verify connection health before use
+- **NOTE**: Database connection NOT used for token verification (stateless)
 
 #### Table Creation Strategy
 
-**Decision**: Better Auth creates tables, Backend reads them
+**Decision**: Better Auth creates tables, Backend does NOT access them for token verification
 
 **Rationale**:
 1. Better Auth requires specific schema for authentication
-2. Backend only needs read access to User table for verification
-3. Avoids schema conflicts and migration issues
-4. Single source of truth for auth schema
+2. Backend performs STATELESS token verification (no database access)
+3. Database models will be added in future phases for task CRUD operations
+4. Avoids schema conflicts and migration issues
+5. Single source of truth for auth schema
 
 **Implementation**:
 - Frontend: Better Auth auto-creates tables on first run
-- Backend: SQLModel models mirror Better Auth schema (read-only)
-- No backend table creation for auth tables
+- Backend: NO database access for token verification (stateless)
+- Backend database connection reserved for future task CRUD operations
 
 ### Implementation Pattern
 
-**Backend User Model (Read-Only):**
+**Backend Does NOT Need User Model for Token Verification:**
 ```python
-# app/models/user.py
-from sqlmodel import SQLModel, Field
-from datetime import datetime
-from typing import Optional
-import uuid
-
-class User(SQLModel, table=True):
-    """
-    User model (read-only for backend).
-    Schema managed by Better Auth on frontend.
-    """
-    __tablename__ = "user"
-
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    email: str = Field(unique=True, index=True)
-    emailVerified: bool = Field(default=False)
-    name: Optional[str] = None
-    image: Optional[str] = None
-    createdAt: datetime = Field(default_factory=datetime.utcnow)
-    updatedAt: datetime = Field(default_factory=datetime.utcnow)
+# NO USER MODEL NEEDED FOR STATELESS TOKEN VERIFICATION
+# Token verification is purely cryptographic using BETTER_AUTH_SECRET
+# User information extracted from verified JWT token claims only
+# Database models will be added in future phases for task CRUD
 ```
 
 ### Decision Summary
 
 - **Connection String**: Same DATABASE_URL for both frontend and backend
-- **Table Creation**: Better Auth auto-creates, backend reads
-- **Connection Pooling**: Both use connection pooling for efficiency
-- **Schema Management**: Better Auth owns schema, backend mirrors it
-- **Environment Variables**: Shared DATABASE_URL in both .env files
+- **Table Creation**: Better Auth auto-creates, backend does NOT access for token verification
+- **Connection Pooling**: Frontend uses pg Pool; backend reserves SQLModel for future use
+- **Schema Management**: Better Auth owns schema, backend performs stateless verification
+- **Environment Variables**: Shared DATABASE_URL in both .env files (backend for future use)
+- **Token Verification**: STATELESS - no database queries, purely cryptographic
 
 ---
 

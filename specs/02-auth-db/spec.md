@@ -135,12 +135,11 @@ As the system, I need both frontend and backend to connect to the same Neon Post
 
 #### Backend Token Verification
 
-- **FR-014**: Backend MUST implement a reusable `get_current_user` dependency that extracts and verifies JWT tokens from the Authorization header
-- **FR-015**: Backend MUST verify token signatures using the shared BETTER_AUTH_SECRET with HS256 algorithm (or Better Auth default)
+- **FR-014**: Backend MUST implement a reusable `get_current_user` dependency that extracts and verifies JWT tokens from the Authorization header statelessly (NO database lookup for verification)
+- **FR-015**: Backend MUST verify token signatures using the shared BETTER_AUTH_SECRET with HS256 algorithm
 - **FR-016**: Backend MUST return 401 Unauthorized for requests with missing, invalid, or expired tokens
-- **FR-017**: Backend MUST extract user identity from verified tokens and never trust client-provided user IDs
-- **FR-018**: Backend MUST provide a test endpoint at `GET /api/v1/me` that returns authenticated user information
-- **FR-019**: Backend MUST validate that the user ID from the token exists in the database before granting access
+- **FR-017**: Backend MUST extract user identity from verified tokens (sub claim)
+- **FR-018**: Backend MUST enforce Path-Based Security: verify that the `user_id` in the URL path matches the `sub` (User ID) in the JWT token. If they do not match, return 403 Forbidden.
 
 #### Security & Environment Configuration
 
@@ -154,24 +153,28 @@ As the system, I need both frontend and backend to connect to the same Neon Post
 ### Key Entities
 
 #### User
+
 - **Purpose**: Represents an authenticated user account
 - **Attributes**: user_id (primary key), email, hashed_password (optional for OAuth users), name, created_at, updated_at
 - **Relationships**: Has many Sessions, has many Accounts (for OAuth providers)
 - **Lifecycle**: Created on sign-up, updated on profile changes, soft-deleted on account deletion
 
 #### Session
+
 - **Purpose**: Represents an active user session with token information
 - **Attributes**: session_id (primary key), user_id (foreign key), token, expires_at (7 days from creation), created_at
 - **Relationships**: Belongs to User
 - **Lifecycle**: Created on sign-in, expires after 7 days, deleted on sign-out
 
 #### Account
+
 - **Purpose**: Links users to OAuth providers (Google, etc.)
 - **Attributes**: account_id (primary key), user_id (foreign key), provider (e.g., "google"), provider_account_id, access_token, refresh_token
 - **Relationships**: Belongs to User
 - **Lifecycle**: Created on OAuth sign-in, updated when tokens refresh
 
 #### Verification
+
 - **Purpose**: Stores email verification tokens and password reset tokens
 - **Attributes**: verification_id (primary key), user_id (foreign key), token, type (email_verification, password_reset), expires_at
 - **Relationships**: Belongs to User
@@ -290,6 +293,7 @@ As the system, I need both frontend and backend to connect to the same Neon Post
 **Impact**: Critical - Complete authentication system failure
 
 **Mitigation**:
+
 - Use environment variable validation on startup
 - Document secret sharing requirement clearly
 - Provide clear error messages when token verification fails
@@ -302,6 +306,7 @@ As the system, I need both frontend and backend to connect to the same Neon Post
 **Impact**: High - Users cannot sign in or sign up
 
 **Mitigation**:
+
 - Implement connection retry logic with exponential backoff
 - Display user-friendly error messages
 - Log connection errors for debugging
@@ -314,6 +319,7 @@ As the system, I need both frontend and backend to connect to the same Neon Post
 **Impact**: Medium - Google sign-in unavailable, but email/password still works
 
 **Mitigation**:
+
 - Provide detailed setup documentation for Google OAuth
 - Validate OAuth credentials on startup
 - Display clear error messages for OAuth failures
@@ -326,6 +332,7 @@ As the system, I need both frontend and backend to connect to the same Neon Post
 **Impact**: Medium - Poor user experience, unexpected sign-outs
 
 **Mitigation**:
+
 - Set reasonable token expiration times (7+ days)
 - Implement token refresh mechanism (future enhancement)
 - Provide clear messaging when session expires
@@ -338,6 +345,7 @@ As the system, I need both frontend and backend to connect to the same Neon Post
 **Impact**: High - Security breach, unauthorized access
 
 **Mitigation**:
+
 - Use httpOnly cookies to prevent JavaScript access
 - Enforce HTTPS to prevent token interception
 - Implement token expiration

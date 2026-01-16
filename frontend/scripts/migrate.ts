@@ -24,13 +24,14 @@ async function runMigrations() {
     console.log('   - session');
     console.log('   - account');
     console.log('   - verification');
+    console.log('   - jwks');
 
     // Verify tables exist
     const result = await pool.query(`
       SELECT table_name
       FROM information_schema.tables
       WHERE table_schema = 'public'
-      AND table_name IN ('user', 'session', 'account', 'verification')
+      AND table_name IN ('user', 'session', 'account', 'verification', 'jwks')
       ORDER BY table_name;
     `);
 

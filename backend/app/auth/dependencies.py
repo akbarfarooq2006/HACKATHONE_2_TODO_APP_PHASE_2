@@ -2,129 +2,170 @@
 Authentication dependencies for FastAPI.
 
 This module provides dependency functions for protecting API endpoints.
-Better Auth uses session tokens (not JWT), so we verify by querying the session table.
+Uses STATELESS JWT verification - NO database queries performed.
+
+JWT tokens are extracted from httpOnly cookies (better-auth.session_data).
+Better Auth uses a two-cookie architecture:
+- better-auth.session_token: Database session ID (primary mechanism)
+- better-auth.session_data: JWT cache (stateless verification)
 """
 
-from datetime import datetime
-from typing import Optional
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlmodel import Session, select
+from typing import Dict, Any, Optional
+from fastapi import Depends, HTTPException, status, Cookie
+from jose import JWTError
 
-from app.database import get_db
-from app.models.user import User
-from app.models.session import Session as SessionModel
-
-
-# HTTP Bearer token scheme
-security = HTTPBearer()
+from app.auth.jwt import verify_jwt_token, extract_user_id_from_token
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
-) -> User:
+    session_data: Optional[str] = Cookie(None, alias="better-auth.session_data")
+) -> str:
     """
-    Get current authenticated user from Better Auth session token.
+    Get current authenticated user ID from JWT token in session_data cookie (STATELESS).
 
     This dependency:
-    1. Extracts the session token from Authorization header
-    2. Queries the session table to find the session
-    3. Validates the session hasn't expired
-    4. Queries the user table to get the user
-    5. Returns the user object
+    1. Extracts the JWT token from better-auth.session_data cookie
+    2. Verifies token signature using BETTER_AUTH_SECRET (NO database query)
+    3. Extracts user_id from token user.id claim (Better Auth nested structure)
+    4. Returns user_id string
+
+    NO DATABASE QUERIES ARE PERFORMED - This is purely cryptographic verification.
+
+    Note: Better Auth uses two cookies:
+    - session_token: Database session ID (primary)
+    - session_data: JWT cache (used here for stateless verification)
+
+    Better Auth JWT structure: {"user": {"id": "...", "email": "...", "name": "..."}, ...}
 
     Args:
-        credentials: HTTP Bearer credentials from Authorization header
-        db: Database session
+        session_data: JWT token from better-auth.session_data cookie
 
     Returns:
-        User object if authentication succeeds
+        User ID (user.id claim from token) if authentication succeeds
 
     Raises:
-        HTTPException: 401 if token is invalid, expired, or user not found
+        HTTPException: 401 if token is missing, invalid, expired, or malformed
     """
-    # Extract session token from credentials
-    session_token = credentials.credentials
+    if not session_data:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+        )
 
     try:
-        # Query session table to find the session
-        statement = select(SessionModel).where(SessionModel.token == session_token)
-        session = db.exec(statement).first()
+        # Extract user ID from Better Auth JWT (handles nested user.id structure)
+        user_id = extract_user_id_from_token(session_data)
+        return user_id
 
-        if session is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid session token",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        # Check if session has expired
-        if session.expiresAt < datetime.utcnow():
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Session has expired",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        # Get user from session
-        user_id = session.userId
-
-        # Query database to get user
-        user_statement = select(User).where(User.id == user_id)
-        user = db.exec(user_statement).first()
-
-        if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        return user
-
-    except HTTPException:
-        raise
+    except JWTError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Authentication failed: {str(e)}",
-            headers={"WWW-Authenticate": "Bearer"},
+            detail="Could not validate credentials",
         )
 
 
 async def get_current_user_optional(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False)),
-    db: Session = Depends(get_db)
-) -> Optional[User]:
+    session_data: Optional[str] = Cookie(None, alias="better-auth.session_data")
+) -> Optional[str]:
     """
-    Get current user if authenticated, None otherwise.
+    Get current authenticated user ID from JWT token in session_data cookie (STATELESS), if present.
+    Returns None if no token is provided or if the token is invalid.
 
     This is useful for endpoints that work differently for authenticated vs anonymous users.
 
+    Better Auth JWT structure: {"user": {"id": "...", "email": "...", "name": "..."}, ...}
+
     Args:
-        credentials: Optional HTTP Bearer credentials
-        db: Database session
+        session_data: Optional JWT token from better-auth.session_data cookie
 
     Returns:
-        User object if authenticated, None otherwise
+        User ID (user.id claim from token) if authentication succeeds, None otherwise
     """
-    if credentials is None:
+    if not session_data:
         return None
 
     try:
-        # Query session table to find the session
-        statement = select(SessionModel).where(SessionModel.token == credentials.credentials)
-        session = db.exec(statement).first()
-
-        if session is None or session.expiresAt < datetime.utcnow():
-            return None
-
-        # Get user from session
-        user_statement = select(User).where(User.id == session.userId)
-        user = db.exec(user_statement).first()
-
-        return user
-
+        user_id = extract_user_id_from_token(session_data)
+        return user_id
+    except JWTError:
+        return None
     except Exception:
         return None
+
+
+async def get_token_payload(
+    session_data: Optional[str] = Cookie(None, alias="better-auth.session_data")
+) -> Dict[str, Any]:
+    """
+    Get full JWT token payload from session_data cookie (STATELESS).
+
+    This dependency verifies the token and returns the complete payload,
+    which includes user information like email, name, etc.
+
+    NO DATABASE QUERIES ARE PERFORMED.
+
+    Args:
+        session_data: JWT token from better-auth.session_data cookie
+
+    Returns:
+        Complete token payload with all claims
+
+    Raises:
+        HTTPException: 401 if token is missing, invalid, expired, or malformed
+    """
+    if not session_data:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+        )
+
+    try:
+        # Verify token signature and decode payload (STATELESS - no DB query)
+        payload = verify_jwt_token(session_data)
+        return payload
+
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+        )
+
+
+
+async def verify_path_user_id(
+    user_id: str,
+    token_user_id: str = Depends(get_current_user)
+) -> str:
+    """
+    Verify that user_id in URL path matches user_id from JWT token.
+
+    This implements path-based security to prevent users from accessing
+    other users' resources by manipulating the URL.
+
+    Args:
+        user_id: User ID from URL path parameter
+        token_user_id: User ID from JWT token (injected by get_current_user)
+
+    Returns:
+        User ID if match succeeds
+
+    Raises:
+        HTTPException: 403 if user_id in path doesn't match token user_id
+    """
+    if user_id != token_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User ID in path does not match token user ID"
+        )
+
+    return user_id
